@@ -37,6 +37,12 @@
       "skillPath": "SKILL.md",
       "computedHash": "bd3744f9e64edde8d87676c23b4ba8de82020337407f14a95ecf88f3c233e63a"
     },
+    "setup-matt-pocock-skills": {
+      "source": "david215/agents",
+      "sourceType": "github",
+      "skillPath": "skills/setup-matt-pocock-skills/SKILL.md",
+      "computedHash": "6398bf44baff9658da5e7989effd5b638ef72bb573cc491f7793d1485c232b49"
+    },
     "to-spec": {
       "source": "mattpocock/skills",
       "sourceType": "github",

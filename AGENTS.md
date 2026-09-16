@@ -31,3 +31,13 @@ Not pipeline stages — invoke situationally, at any point prose or code is prod
 
 - `grill-with-docs` only produces two kinds of file output: resolved **terms** (→ `CONTEXT.md`, immediately) and hard **decisions** that are surprising, hard to reverse, or involve a real trade-off (→ `docs/adr/`, must clear that bar). Everything else stays in conversation — don't force minor discussion into a permanent file.
 - `to-tickets` tickets declare blocking edges — respect them when sequencing `/implement` work; don't start a blocked ticket early.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Parked uses a single root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
