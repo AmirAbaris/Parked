@@ -8,12 +8,28 @@
 
 /* Begin PBXFileReference section */
 		E9164536305ABF7D00CBD9D8 /* Parked.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Parked.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E9164556305ABF7D00CBD9D8 /* ParkedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ParkedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXContainerItemProxy section */
+		E9164557305ABF7D00CBD9D8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E916452E305ABF7D00CBD9D8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E9164535305ABF7D00CBD9D8;
+			remoteInfo = Parked;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E9164538305ABF7D00CBD9D8 /* Parked */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Parked;
+			sourceTree = "<group>";
+		};
+		E9164558305ABF7D00CBD9D8 /* ParkedTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ParkedTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -24,6 +40,12 @@
 			files = (
 			);
 		};
+		E9164553305ABF7D00CBD9D8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -31,6 +53,7 @@
 			isa = PBXGroup;
 			children = (
 				E9164538305ABF7D00CBD9D8 /* Parked */,
+				E9164558305ABF7D00CBD9D8 /* ParkedTests */,
 				E9164537305ABF7D00CBD9D8 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -39,6 +62,7 @@
 			isa = PBXGroup;
 			children = (
 				E9164536305ABF7D00CBD9D8 /* Parked.app */,
+				E9164556305ABF7D00CBD9D8 /* ParkedTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -64,7 +88,35 @@
 			productReference = E9164536305ABF7D00CBD9D8 /* Parked.app */;
 			productType = "com.apple.product-type.application";
 		};
+		E9164555305ABF7D00CBD9D8 /* ParkedTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E9164563305ABF7D00CBD9D8 /* Build configuration list for PBXNativeTarget "ParkedTests" */;
+			buildPhases = (
+				E9164552305ABF7D00CBD9D8 /* Sources */,
+				E9164553305ABF7D00CBD9D8 /* Frameworks */,
+				E9164554305ABF7D00CBD9D8 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = (
+				E9164559305ABF7D00CBD9D8 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				E9164558305ABF7D00CBD9D8 /* ParkedTests */,
+			);
+			name = ParkedTests;
+			productName = ParkedTests;
+			productReference = E9164556305ABF7D00CBD9D8 /* ParkedTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXTargetDependency section */
+		E9164559305ABF7D00CBD9D8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E9164535305ABF7D00CBD9D8 /* Parked */;
+			targetProxy = E9164557305ABF7D00CBD9D8 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		E916452E305ABF7D00CBD9D8 /* Project object */ = {
@@ -94,6 +146,7 @@
 			projectRoot = "";
 			targets = (
 				E9164535305ABF7D00CBD9D8 /* Parked */,
+				E9164555305ABF7D00CBD9D8 /* ParkedTests */,
 			);
 		};
 /* End PBXProject section */
@@ -104,6 +157,12 @@
 			files = (
 			);
 		};
+		E9164554305ABF7D00CBD9D8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -111,6 +170,12 @@
 			isa = PBXSourcesBuildPhase;
 			files = (
 			);
+		};
+		E9164552305ABF7D00CBD9D8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -168,7 +233,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -226,7 +291,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -264,7 +329,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -296,7 +361,43 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		E9164561305ABF7D00CBD9D8 /* Debug configuration for PBXNativeTarget "ParkedTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = aba.ParkedTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ENABLE_TESTABILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Parked.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Parked";
+			};
+			name = Debug;
+		};
+		E9164562305ABF7D00CBD9D8 /* Release configuration for PBXNativeTarget "ParkedTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = aba.ParkedTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ENABLE_TESTABILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Parked.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Parked";
 			};
 			name = Release;
 		};
@@ -316,6 +417,14 @@
 			buildConfigurations = (
 				E9164544305ABF7D00CBD9D8 /* Debug configuration for PBXNativeTarget "Parked" */,
 				E9164545305ABF7D00CBD9D8 /* Release configuration for PBXNativeTarget "Parked" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		E9164563305ABF7D00CBD9D8 /* Build configuration list for PBXNativeTarget "ParkedTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E9164561305ABF7D00CBD9D8 /* Debug configuration for PBXNativeTarget "ParkedTests" */,
+				E9164562305ABF7D00CBD9D8 /* Release configuration for PBXNativeTarget "ParkedTests" */,
 			);
 			defaultConfigurationName = Release;
 		};
