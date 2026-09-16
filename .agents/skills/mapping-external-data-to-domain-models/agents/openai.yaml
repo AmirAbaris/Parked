@@ -1,0 +1,3 @@
+interface:
+  display_name: "Mapping External Data to Domain Models"
+  short_description: "DTO + mapper pattern for keeping external data shapes out of your domain model"
