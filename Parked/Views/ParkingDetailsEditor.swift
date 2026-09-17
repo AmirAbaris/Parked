@@ -136,7 +136,6 @@ struct ParkingDetailsEditor: View {
                 draft.parkingPhotoData = image.jpegData(compressionQuality: 0.85)
             }
         }
-        .interactiveDismissDisabled()
     }
 
     private func openCamera() {

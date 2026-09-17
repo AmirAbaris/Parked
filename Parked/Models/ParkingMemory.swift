@@ -17,24 +17,18 @@ final class ParkingMemory {
     var note: String?
     @Attribute(.externalStorage) var parkingPhotoData: Data?
 
-    init(
-        id: UUID = UUID(),
-        parkedAt: Date,
-        floor: String? = nil,
-        section: String? = nil,
-        spot: String? = nil,
-        landmark: String? = nil,
-        note: String? = nil,
-        parkingPhotoData: Data? = nil
-    ) {
+    init(id: UUID = UUID(), parkedAt: Date) {
         self.id = id
         self.parkedAt = parkedAt
-        self.floor = floor
-        self.section = section
-        self.spot = spot
-        self.landmark = landmark
-        self.note = note
-        self.parkingPhotoData = parkingPhotoData
+    }
+
+    func apply(_ draft: ParkingDetailsDraft) {
+        floor = draft.normalizedFloor
+        section = draft.normalizedSection
+        spot = draft.normalizedSpot
+        landmark = draft.normalizedLandmark
+        note = draft.normalizedNote
+        parkingPhotoData = draft.parkingPhotoData
     }
 }
 
@@ -71,5 +65,16 @@ struct ParkingDetailsDraft: Equatable {
             note: memory.note ?? "",
             parkingPhotoData: memory.parkingPhotoData
         )
+    }
+
+    fileprivate var normalizedFloor: String? { normalized(floor) }
+    fileprivate var normalizedSection: String? { normalized(section) }
+    fileprivate var normalizedSpot: String? { normalized(spot) }
+    fileprivate var normalizedLandmark: String? { normalized(landmark) }
+    fileprivate var normalizedNote: String? { normalized(note) }
+
+    private func normalized(_ value: String) -> String? {
+        let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedValue.isEmpty ? nil : trimmedValue
     }
 }

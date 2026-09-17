@@ -100,12 +100,7 @@ final class ParkingViewModel {
     func saveDetails(_ draft: ParkingDetailsDraft) {
         guard let activeMemory else { return }
 
-        activeMemory.floor = normalized(draft.floor)
-        activeMemory.section = normalized(draft.section)
-        activeMemory.spot = normalized(draft.spot)
-        activeMemory.landmark = normalized(draft.landmark)
-        activeMemory.note = normalized(draft.note)
-        activeMemory.parkingPhotoData = draft.parkingPhotoData
+        activeMemory.apply(draft)
 
         do {
             try modelContext.save()
@@ -167,8 +162,4 @@ final class ParkingViewModel {
         }
     }
 
-    private func normalized(_ value: String) -> String? {
-        let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedValue.isEmpty ? nil : trimmedValue
-    }
 }

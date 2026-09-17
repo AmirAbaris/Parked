@@ -216,9 +216,8 @@ private struct ParkingHomeView: View {
                let image = UIImage(data: photoData) {
                 Image(uiImage: image)
                     .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 220)
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: 360)
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .accessibilityLabel("Aks-e park")
             }
@@ -300,9 +299,9 @@ private struct ParkingHomeView: View {
 
     private var detailsEditorBinding: Binding<Bool> {
         Binding(
-            get: { detailsDraft != nil },
+            get: { viewModel.screen == .editing },
             set: { isPresented in
-                if !isPresented, detailsDraft != nil {
+                if !isPresented, viewModel.screen == .editing {
                     detailsDraft = nil
                     viewModel.cancelDetailsEditing()
                 }
