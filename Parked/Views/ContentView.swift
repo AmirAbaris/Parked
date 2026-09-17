@@ -346,11 +346,16 @@ private struct ParkingHomeView: View {
                     Button("Location ezafe kon", systemImage: "location") {
                         viewModel.retryLocationCapture()
                     }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
-            Label(locationStatusTitle, systemImage: locationStatusSystemImage)
+            Label(
+                locationStatusPresentation.title,
+                systemImage: locationStatusPresentation.systemImage
+            )
                 .font(.headline)
         }
         .accessibilityElement(children: .contain)
@@ -362,36 +367,25 @@ private struct ParkingHomeView: View {
             viewModel.retryLocationCapture()
         }
         .buttonStyle(.borderedProminent)
+        .controlSize(.large)
 
         Button("Bedoon location negah dar") {
             viewModel.keepManualParkingMemory()
         }
         .buttonStyle(.bordered)
+        .controlSize(.large)
     }
 
-    private var locationStatusTitle: String {
+    private var locationStatusPresentation: (title: String, systemImage: String) {
         switch viewModel.locationCaptureState {
         case .saved:
-            "Location-e taghribi save shod"
+            ("Location-e taghribi save shod", "location.fill")
         case .capturing:
-            "Dar hale gereftane location"
+            ("Dar hale gereftane location", "location")
         case .unavailable:
-            "Location dar dastres nist"
+            ("Location dar dastres nist", "location.slash")
         case .idle, .manual:
-            "Park-e bedoon location"
-        }
-    }
-
-    private var locationStatusSystemImage: String {
-        switch viewModel.locationCaptureState {
-        case .saved:
-            "location.fill"
-        case .capturing:
-            "location"
-        case .unavailable:
-            "location.slash"
-        case .idle, .manual:
-            "mappin.slash"
+            ("Park-e bedoon location", "mappin.slash")
         }
     }
 

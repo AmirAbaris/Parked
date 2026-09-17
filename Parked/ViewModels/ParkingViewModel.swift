@@ -34,6 +34,7 @@ final class ParkingViewModel {
     private let locationCaptureWindowNanoseconds: UInt64
     private var locationCaptureWindowTask: Task<Void, Never>?
     private var pendingLocationEstimate: ParkingLocationEstimate?
+    private var pendingLocationCaptureFailed = false
     private var isPreparingNewMemory = false
 
     private(set) var activeMemory: ParkingMemory?
@@ -202,14 +203,21 @@ final class ParkingViewModel {
             screen = .active
             isPreparingNewMemory = false
             pendingLocationEstimate = nil
-            locationCaptureState = locationStateWhileCapturing(for: memory)
-            scheduleLocationCaptureWindowEnd()
+            let captureFailed = pendingLocationCaptureFailed
+            pendingLocationCaptureFailed = false
+            if captureFailed, memory.locationEstimate == nil {
+                locationCaptureState = .unavailable
+            } else {
+                locationCaptureState = locationStateWhileCapturing(for: memory)
+                scheduleLocationCaptureWindowEnd()
+            }
         } catch {
             modelContext.rollback()
             activeMemory = previousMemory
             screen = .persistenceFailure
             isPreparingNewMemory = false
             pendingLocationEstimate = nil
+            pendingLocationCaptureFailed = false
             stopLocationCapture()
         }
     }
@@ -218,6 +226,7 @@ final class ParkingViewModel {
         stopLocationCapture()
         isPreparingNewMemory = preparingNewMemory
         pendingLocationEstimate = nil
+        pendingLocationCaptureFailed = false
 
         guard let locationProvider else {
             locationCaptureState = .manual
@@ -242,7 +251,7 @@ final class ParkingViewModel {
         guard estimate.isUsable else { return }
 
         if isPreparingNewMemory || activeMemory == nil {
-            if pendingLocationEstimate.map({ estimate.isMoreAccurate(than: $0) }) ?? true {
+            if pendingLocationEstimate.map({ isPreferredInitialEstimate(estimate, over: $0) }) ?? true {
                 pendingLocationEstimate = estimate
             }
             locationCaptureState = .saved(horizontalAccuracy: pendingLocationEstimate?.horizontalAccuracy ?? estimate.horizontalAccuracy)
@@ -268,6 +277,14 @@ final class ParkingViewModel {
     }
 
     private func locationCaptureFailed() {
+        if isPreparingNewMemory {
+            guard pendingLocationEstimate == nil else { return }
+            pendingLocationCaptureFailed = true
+            locationCaptureState = .unavailable
+            stopLocationCapture()
+            return
+        }
+
         guard pendingLocationEstimate == nil,
               activeMemory?.locationEstimate == nil else { return }
         locationCaptureState = .unavailable
@@ -286,6 +303,19 @@ final class ParkingViewModel {
     }
 
     private func finishLocationCaptureWindow() {
+        if isPreparingNewMemory {
+            stopLocationCapture()
+            if let pendingLocationEstimate {
+                locationCaptureState = .saved(
+                    horizontalAccuracy: pendingLocationEstimate.horizontalAccuracy
+                )
+            } else {
+                pendingLocationCaptureFailed = true
+                locationCaptureState = .unavailable
+            }
+            return
+        }
+
         let memory = activeMemory
         stopLocationCapture()
         locationCaptureState = memory.map(locationState(for:)) ?? .idle
@@ -312,6 +342,16 @@ final class ParkingViewModel {
             return .saved(horizontalAccuracy: estimate.horizontalAccuracy)
         }
         return locationProvider == nil ? .manual : .capturing
+    }
+
+    private func isPreferredInitialEstimate(
+        _ candidate: ParkingLocationEstimate,
+        over current: ParkingLocationEstimate
+    ) -> Bool {
+        if candidate.capturedAt == current.capturedAt {
+            return candidate.isMoreAccurate(than: current)
+        }
+        return candidate.capturedAt > current.capturedAt
     }
 
 }

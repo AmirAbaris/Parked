@@ -105,6 +105,48 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertEqual(state.activeMemory?.locationEstimate, improvedEstimate)
     }
 
+    func testNewestUsableReadingWinsBeforeTheImmediateSave() async throws {
+        let context = try makeContext()
+        let olderAccurateEstimate = makeEstimate(accuracy: 5)
+        let newerApproximateEstimate = makeEstimate(accuracy: 400, capturedAtOffset: 1)
+        let locationProvider = TestParkingLocationProvider(
+            initialEstimate: olderAccurateEstimate
+        )
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+
+        let saveTask = state.tapPark()
+        locationProvider.send(newerApproximateEstimate)
+        await saveTask.value
+
+        XCTAssertEqual(state.activeMemory?.locationEstimate, newerApproximateEstimate)
+    }
+
+    func testReplacementCaptureFailureUsesRecoveryStateInsteadOfOldLocation() async throws {
+        let context = try makeContext()
+        let locationProvider = TestParkingLocationProvider(
+            initialEstimate: makeEstimate(accuracy: 12)
+        )
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+        await state.tapPark().value
+
+        locationProvider.initialEstimate = nil
+        state.tapPark()
+        let replacementTask = state.confirmReplacement()
+        locationProvider.fail()
+        await replacementTask.value
+
+        XCTAssertNil(state.activeMemory?.locationEstimate)
+        XCTAssertEqual(state.locationCaptureState, .unavailable)
+    }
+
     func testRestoreLoadsThePersistedActiveMemory() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
@@ -253,7 +295,7 @@ final class ParkingViewModelTests: XCTestCase {
 
 @MainActor
 private final class TestParkingLocationProvider: ParkingLocationProviding {
-    private let initialEstimate: ParkingLocationEstimate?
+    var initialEstimate: ParkingLocationEstimate?
     private var onUpdate: ((ParkingLocationEstimate) -> Void)?
     private var onFailure: (() -> Void)?
 

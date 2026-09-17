@@ -19,6 +19,7 @@ final class CoreLocationParkingLocationProvider: NSObject, ParkingLocationProvid
     private let locationManager: CLLocationManager
     private var onUpdate: ((ParkingLocationEstimate) -> Void)?
     private var onFailure: (() -> Void)?
+    private var isCaptureActive = false
 
     override init() {
         locationManager = CLLocationManager()
@@ -34,6 +35,7 @@ final class CoreLocationParkingLocationProvider: NSObject, ParkingLocationProvid
         onUpdate: @escaping (ParkingLocationEstimate) -> Void,
         onFailure: @escaping () -> Void
     ) -> ParkingLocationEstimate? {
+        isCaptureActive = true
         self.onUpdate = onUpdate
         self.onFailure = onFailure
 
@@ -56,6 +58,7 @@ final class CoreLocationParkingLocationProvider: NSObject, ParkingLocationProvid
     }
 
     func stopForegroundCapture() {
+        isCaptureActive = false
         locationManager.stopUpdatingLocation()
         onUpdate = nil
         onFailure = nil
@@ -77,6 +80,8 @@ final class CoreLocationParkingLocationProvider: NSObject, ParkingLocationProvid
 
 extension CoreLocationParkingLocationProvider: CLLocationManagerDelegate {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        guard isCaptureActive else { return }
+
         switch manager.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             manager.startUpdatingLocation()
@@ -90,6 +95,8 @@ extension CoreLocationParkingLocationProvider: CLLocationManagerDelegate {
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard isCaptureActive else { return }
+
         guard let estimate = locations
             .compactMap(Self.currentEstimate(from:))
             .max(by: { $0.capturedAt < $1.capturedAt }) else { return }
@@ -97,6 +104,8 @@ extension CoreLocationParkingLocationProvider: CLLocationManagerDelegate {
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        guard isCaptureActive else { return }
+
         if let locationError = error as? CLError, locationError.code == .locationUnknown {
             return
         }
