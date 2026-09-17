@@ -60,17 +60,19 @@ final class ParkingViewModel {
         }
     }
 
-    func tapPark() {
+    @discardableResult
+    func tapPark() -> Task<Void, Never> {
         guard activeMemory == nil else {
             screen = .replacementConfirmation
-            return
+            return Task {}
         }
-        saveNewMemory()
+        return saveNewMemory()
     }
 
-    func confirmReplacement() {
-        guard activeMemory != nil else { return }
-        saveNewMemory(replacingActiveMemory: true)
+    @discardableResult
+    func confirmReplacement() -> Task<Void, Never> {
+        guard activeMemory != nil else { return Task {} }
+        return saveNewMemory(replacingActiveMemory: true)
     }
 
     func cancelConfirmation() {
@@ -96,14 +98,31 @@ final class ParkingViewModel {
         }
     }
 
-    private func saveNewMemory(replacingActiveMemory: Bool = false) {
+    private func saveNewMemory(replacingActiveMemory: Bool = false) -> Task<Void, Never> {
         screen = .saving
         let previousMemory = activeMemory
+        let parkedAt = now()
+
+        return Task { @MainActor in
+            await Task.yield()
+            self.persistNewMemory(
+                parkedAt: parkedAt,
+                previousMemory: previousMemory,
+                replacingActiveMemory: replacingActiveMemory
+            )
+        }
+    }
+
+    private func persistNewMemory(
+        parkedAt: Date,
+        previousMemory: ParkingMemory?,
+        replacingActiveMemory: Bool
+    ) {
         if replacingActiveMemory, let activeMemory {
             modelContext.delete(activeMemory)
         }
 
-        let memory = ParkingMemory(parkedAt: now())
+        let memory = ParkingMemory(parkedAt: parkedAt)
         modelContext.insert(memory)
         do {
             try modelContext.save()

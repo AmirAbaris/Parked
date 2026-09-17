@@ -129,7 +129,7 @@ private struct ParkingHomeView: View {
                         .font(.headline)
                         .foregroundStyle(.green)
 
-                    Text("Jaye parket save shode.")
+                    Text("Yade parket save shode.")
                         .font(.largeTitle.weight(.bold))
                         .fixedSize(horizontal: false, vertical: true)
 

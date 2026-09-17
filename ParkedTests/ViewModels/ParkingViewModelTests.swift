@@ -6,11 +6,14 @@ import XCTest
 final class ParkingViewModelTests: XCTestCase {
     private let parkedAt = Date(timeIntervalSince1970: 1_789_000_000)
 
-    func testTapParkCreatesAndPersistsAManualMemoryAtTapTime() throws {
+    func testTapParkCreatesAndPersistsAManualMemoryAtTapTime() async throws {
         let context = try makeContext()
         let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
 
-        state.tapPark()
+        let saveTask = state.tapPark()
+
+        XCTAssertEqual(state.screen, .saving)
+        await saveTask.value
 
         XCTAssertEqual(state.screen, .active)
         XCTAssertEqual(state.activeMemory?.parkedAt, parkedAt)
@@ -32,13 +35,13 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertEqual(state.activeMemory?.id, memory.id)
     }
 
-    func testReplacementRequiresConfirmationAndKeepsOnlyTheNewMemory() throws {
+    func testReplacementRequiresConfirmationAndKeepsOnlyTheNewMemory() async throws {
         let context = try makeContext()
         let firstDate = parkedAt
         let replacementDate = parkedAt.addingTimeInterval(60)
         var date = firstDate
         let state = ParkingViewModel(modelContext: context, now: { date })
-        state.tapPark()
+        await state.tapPark().value
         let firstMemoryID = try XCTUnwrap(state.activeMemory?.id)
 
         date = replacementDate
@@ -46,17 +49,20 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertEqual(state.screen, .replacementConfirmation)
         XCTAssertEqual(state.activeMemory?.id, firstMemoryID)
 
-        state.confirmReplacement()
+        let replacementTask = state.confirmReplacement()
+
+        XCTAssertEqual(state.screen, .saving)
+        await replacementTask.value
 
         XCTAssertEqual(state.screen, .active)
         XCTAssertEqual(state.activeMemory?.parkedAt, replacementDate)
         XCTAssertEqual(try context.fetch(FetchDescriptor<ParkingMemory>()).count, 1)
     }
 
-    func testCompletionRequiresConfirmationThenRemovesTheMemory() throws {
+    func testCompletionRequiresConfirmationThenRemovesTheMemory() async throws {
         let context = try makeContext()
         let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
-        state.tapPark()
+        await state.tapPark().value
 
         state.requestCompletion()
         XCTAssertEqual(state.screen, .completionConfirmation)
