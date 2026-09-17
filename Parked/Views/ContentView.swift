@@ -90,28 +90,34 @@ private struct ParkingHomeView: View {
     }
 
     private var emptyState: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                Image(systemName: "parkingsign.circle.fill")
-                    .font(.system(size: 64))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.tint)
-                    .accessibilityHidden(true)
+        ZStack {
+            LinearGradient(colors: [Color.accentColor.opacity(0.16), Color(uiColor: .systemBackground)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                .ignoresSafeArea()
 
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Jaye mashineto save kon")
-                        .font(.largeTitle.weight(.bold))
-                        .fixedSize(horizontal: false, vertical: true)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Image("ParkingExample")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 300)
+                        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                        .accessibilityLabel("Sample photo of a parked car beside a colored parking column")
 
-                    Text("Ba ye tap save kon. Aks o joz'iyat ro ba'dan ezafe kon.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Yadet bemone koja parke")
+                            .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("Ye aks az ja begir, ya tabaghe o neshone ro ezafe kon.")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 120)
             }
-            .frame(maxWidth: .infinity, minHeight: 420, alignment: .center)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 112)
         }
         .safeAreaInset(edge: .bottom) {
             parkingActionBar {
@@ -128,16 +134,18 @@ private struct ParkingHomeView: View {
     }
 
     private var activeState: some View {
-        ScrollView {
-            if let memory = viewModel.activeMemory {
-                VStack(alignment: .leading, spacing: 24) {
-                    parkingPhoto(memory)
-                    parkingTime(memory.parkedAt)
-                    parkingDetails(memory)
+        ZStack {
+            Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
+            ScrollView {
+                if let memory = viewModel.activeMemory {
+                    VStack(alignment: .leading, spacing: 20) {
+                        activeHero(memory)
+                        parkingDetails(memory)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 112)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .padding(.bottom, 112)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -156,13 +164,50 @@ private struct ParkingHomeView: View {
                         Button(role: .destructive) {
                             viewModel.requestCompletion()
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Image(systemName: "trash")
+                                .frame(width: 44, height: 44)
                         }
                         .buttonStyle(.glass)
                         .tint(.red)
+                        .accessibilityLabel("Delete")
                         .accessibilityHint("Ba taeed, in park o joz'iyatesh ro pak mikone.")
                     }
+                    .frame(maxWidth: .infinity)
                 }
+            }
+        }
+    }
+
+    private func activeHero(_ memory: ParkingMemory) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack {
+                Label("Park shode", systemImage: "checkmark.circle.fill")
+                    .font(.headline)
+                    .foregroundStyle(.green)
+                Spacer()
+                Text(memory.parkedAt, style: .relative)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+
+            if memory.parkingPhotoData != nil { parkingPhoto(memory) }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Mashinet injast")
+                    .font(.system(.title, design: .rounded, weight: .bold))
+                Text("Joz'iyate zir komaket mikone peydash koni.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            if #available(iOS 26, *) {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(.clear)
+                    .glassEffect(.regular.tint(.green.opacity(0.08)), in: .rect(cornerRadius: 28))
+            } else {
+                RoundedRectangle(cornerRadius: 28, style: .continuous).fill(.regularMaterial)
             }
         }
     }
@@ -248,6 +293,16 @@ private struct ParkingHomeView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(20)
+        .background {
+            if #available(iOS 26, *) {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.clear)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 24))
+            } else {
+                RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.background)
+            }
+        }
         .accessibilityElement(children: .contain)
     }
 
@@ -297,6 +352,7 @@ private struct ParkingHomeView: View {
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 4)
+        .background(.ultraThinMaterial)
     }
 
     private func alertBinding(for screen: ParkingViewModel.Screen) -> Binding<Bool> {
