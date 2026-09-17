@@ -1,5 +1,5 @@
 //
-//  ParkingStateModel.swift
+//  ParkingViewModel.swift
 //  Parked
 //
 
@@ -7,20 +7,9 @@ import Foundation
 import Observation
 import SwiftData
 
-@Model
-final class ParkingMemory {
-    @Attribute(.unique) var id: UUID
-    var parkedAt: Date
-
-    init(id: UUID = UUID(), parkedAt: Date) {
-        self.id = id
-        self.parkedAt = parkedAt
-    }
-}
-
 @MainActor
 @Observable
-final class ParkingStateModel {
+final class ParkingViewModel {
     enum Screen: Equatable {
         case empty
         case saving

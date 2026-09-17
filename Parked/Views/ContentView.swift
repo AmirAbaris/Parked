@@ -10,32 +10,32 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var parkingState: ParkingStateModel?
+    @State private var parkingViewModel: ParkingViewModel?
 
     var body: some View {
         Group {
-            if let parkingState {
-                ParkingHomeView(parkingState: parkingState)
+            if let parkingViewModel {
+                ParkingHomeView(viewModel: parkingViewModel)
             } else {
                 ProgressView()
             }
         }
         .task {
-            guard parkingState == nil else { return }
-            let state = ParkingStateModel(modelContext: modelContext)
-            state.restore()
-            parkingState = state
+            guard parkingViewModel == nil else { return }
+            let viewModel = ParkingViewModel(modelContext: modelContext)
+            viewModel.restore()
+            parkingViewModel = viewModel
         }
     }
 }
 
 private struct ParkingHomeView: View {
-    @Bindable var parkingState: ParkingStateModel
+    @Bindable var viewModel: ParkingViewModel
 
     var body: some View {
         NavigationStack {
             Group {
-                switch parkingState.screen {
+                switch viewModel.screen {
                 case .empty:
                     emptyState
                 case .saving:
@@ -48,28 +48,28 @@ private struct ParkingHomeView: View {
             }
             .navigationTitle("Parked")
             .toolbar {
-                if parkingState.activeMemory != nil {
+                if viewModel.activeMemory != nil {
                     Button("Mashineto peyda kardi?") {
-                        parkingState.requestCompletion()
+                    viewModel.requestCompletion()
                     }
                 }
             }
             .alert("Yade park ghabli avaz beshe?", isPresented: alertBinding(for: .replacementConfirmation)) {
                 Button("Avaz kon", role: .destructive) {
-                    parkingState.confirmReplacement()
+                    viewModel.confirmReplacement()
                 }
                 Button("Kheyr", role: .cancel) {
-                    parkingState.cancelConfirmation()
+                    viewModel.cancelConfirmation()
                 }
             } message: {
                 Text("Yade ghabli pak mishe va yade jadid save mishe.")
             }
             .alert("Mashineto peyda kardi?", isPresented: alertBinding(for: .completionConfirmation)) {
                 Button("Bale, tamoom shod", role: .destructive) {
-                    parkingState.confirmCompletion()
+                    viewModel.confirmCompletion()
                 }
                 Button("Hanooz na", role: .cancel) {
-                    parkingState.cancelConfirmation()
+                    viewModel.cancelConfirmation()
                 }
             } message: {
                 Text("Yade park az ruye in iPhone pak mishe.")
@@ -84,7 +84,7 @@ private struct ParkingHomeView: View {
             Text("Alan mashineto park kardi? Ba ye tap jash ro save kon.")
         } actions: {
             Button("Mashinamo park kardam") {
-                parkingState.tapPark()
+                viewModel.tapPark()
             }
             .buttonStyle(.borderedProminent)
             .accessibilityHint("Yek yade park jadid save mikone.")
@@ -100,7 +100,7 @@ private struct ParkingHomeView: View {
             VStack(spacing: 8) {
                 Text("Yade parket save shode")
                     .font(.title2.weight(.semibold))
-                if let parkedAt = parkingState.activeMemory?.parkedAt {
+                if let parkedAt = viewModel.activeMemory?.parkedAt {
                     Text(parkedAt, style: .relative)
                         .foregroundStyle(.secondary)
                     Text(parkedAt, style: .time)
@@ -109,7 +109,7 @@ private struct ParkingHomeView: View {
             }
 
             Button("Dobare park kardam") {
-                parkingState.tapPark()
+                viewModel.tapPark()
             }
             .buttonStyle(.bordered)
             .accessibilityHint("Ba taeed, yade park ghabli ro avaz mikone.")
@@ -125,17 +125,17 @@ private struct ParkingHomeView: View {
             Text("Yade park ro natoonestim az in iPhone bekhoonim ya save konim.")
         } actions: {
             Button("Dobare talash kon") {
-                parkingState.restore()
+                viewModel.restore()
             }
             .buttonStyle(.bordered)
         }
     }
 
-    private func alertBinding(for screen: ParkingStateModel.Screen) -> Binding<Bool> {
+    private func alertBinding(for screen: ParkingViewModel.Screen) -> Binding<Bool> {
         Binding(
-            get: { parkingState.screen == screen },
+            get: { viewModel.screen == screen },
             set: { isPresented in
-                if !isPresented { parkingState.cancelConfirmation() }
+                if !isPresented { viewModel.cancelConfirmation() }
             }
         )
     }

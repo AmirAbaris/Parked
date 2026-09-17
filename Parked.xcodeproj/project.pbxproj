@@ -6,11 +6,6 @@
 	objectVersion = 110;
 	objects = {
 
-/* Begin PBXFileReference section */
-		E9164536305ABF7D00CBD9D8 /* Parked.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Parked.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		E9164556305ABF7D00CBD9D8 /* ParkedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ParkedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
-
 /* Begin PBXContainerItemProxy section */
 		E9164557305ABF7D00CBD9D8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -20,6 +15,11 @@
 			remoteInfo = Parked;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		E9164536305ABF7D00CBD9D8 /* Parked.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Parked.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E9164556305ABF7D00CBD9D8 /* ParkedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ParkedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E9164538305ABF7D00CBD9D8 /* Parked */ = {
@@ -42,9 +42,8 @@
 		};
 		E9164553305ABF7D00CBD9D8 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = ();
-			runOnlyForDeploymentPostprocessing = 0;
+			files = (
+			);
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -96,7 +95,8 @@
 				E9164553305ABF7D00CBD9D8 /* Frameworks */,
 				E9164554305ABF7D00CBD9D8 /* Resources */,
 			);
-			buildRules = ();
+			buildRules = (
+			);
 			dependencies = (
 				E9164559305ABF7D00CBD9D8 /* PBXTargetDependency */,
 			);
@@ -109,14 +109,6 @@
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
-
-/* Begin PBXTargetDependency section */
-		E9164559305ABF7D00CBD9D8 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = E9164535305ABF7D00CBD9D8 /* Parked */;
-			targetProxy = E9164557305ABF7D00CBD9D8 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		E916452E305ABF7D00CBD9D8 /* Project object */ = {
@@ -159,9 +151,8 @@
 		};
 		E9164554305ABF7D00CBD9D8 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = ();
-			runOnlyForDeploymentPostprocessing = 0;
+			files = (
+			);
 		};
 /* End PBXResourcesBuildPhase section */
 
@@ -173,11 +164,18 @@
 		};
 		E9164552305ABF7D00CBD9D8 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = ();
-			runOnlyForDeploymentPostprocessing = 0;
+			files = (
+			);
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E9164559305ABF7D00CBD9D8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E9164535305ABF7D00CBD9D8 /* Parked */;
+			targetProxy = E9164557305ABF7D00CBD9D8 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		E9164541305ABF7D00CBD9D8 /* Debug configuration for PBXProject "Parked" */ = {

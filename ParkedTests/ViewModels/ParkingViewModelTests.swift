@@ -3,12 +3,12 @@ import XCTest
 @testable import Parked
 
 @MainActor
-final class ParkingStateModelTests: XCTestCase {
+final class ParkingViewModelTests: XCTestCase {
     private let parkedAt = Date(timeIntervalSince1970: 1_789_000_000)
 
     func testTapParkCreatesAndPersistsAManualMemoryAtTapTime() throws {
         let context = try makeContext()
-        let state = ParkingStateModel(modelContext: context, now: { self.parkedAt })
+        let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
 
         state.tapPark()
 
@@ -24,7 +24,7 @@ final class ParkingStateModelTests: XCTestCase {
         context.insert(memory)
         try context.save()
         let relaunchedContext = ModelContext(container)
-        let state = ParkingStateModel(modelContext: relaunchedContext)
+        let state = ParkingViewModel(modelContext: relaunchedContext)
 
         state.restore()
 
@@ -37,7 +37,7 @@ final class ParkingStateModelTests: XCTestCase {
         let firstDate = parkedAt
         let replacementDate = parkedAt.addingTimeInterval(60)
         var date = firstDate
-        let state = ParkingStateModel(modelContext: context, now: { date })
+        let state = ParkingViewModel(modelContext: context, now: { date })
         state.tapPark()
         let firstMemoryID = try XCTUnwrap(state.activeMemory?.id)
 
@@ -55,7 +55,7 @@ final class ParkingStateModelTests: XCTestCase {
 
     func testCompletionRequiresConfirmationThenRemovesTheMemory() throws {
         let context = try makeContext()
-        let state = ParkingStateModel(modelContext: context, now: { self.parkedAt })
+        let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
         state.tapPark()
 
         state.requestCompletion()
