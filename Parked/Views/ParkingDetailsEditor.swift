@@ -8,6 +8,7 @@ struct ParkingDetailsEditor: View {
     @State private var draft: ParkingDetailsDraft
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var isShowingPhotoChoices = false
+    @State private var isShowingPhotoLibrary = false
     @State private var isShowingCamera = false
     @State private var isShowingCameraUnavailable = false
 
@@ -109,8 +110,8 @@ struct ParkingDetailsEditor: View {
                     openCamera()
                 }
 
-                PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                    Label("Az Photos entekhab kon", systemImage: "photo.on.rectangle")
+                Button("Az Photos entekhab kon", systemImage: "photo.on.rectangle") {
+                    isShowingPhotoLibrary = true
                 }
 
                 Button("Bikhial", role: .cancel) {}
@@ -120,6 +121,11 @@ struct ParkingDetailsEditor: View {
             } message: {
                 Text("Mituni az Photos ye aks entekhab koni.")
             }
+            .photosPicker(
+                isPresented: $isShowingPhotoLibrary,
+                selection: $selectedPhoto,
+                matching: .images
+            )
             .fullScreenCover(isPresented: $isShowingCamera) {
                 CameraPicker { image in
                     draft.parkingPhotoData = image.jpegData(compressionQuality: 0.85)
