@@ -47,10 +47,16 @@ private struct ParkingHomeView: View {
                 }
             }
             .navigationTitle("Parked")
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 if viewModel.activeMemory != nil {
-                    Button("Mashineto peyda kardi?") {
-                    viewModel.requestCompletion()
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            viewModel.requestCompletion()
+                        } label: {
+                            Label("Mashineto peyda kardi?", systemImage: "checkmark")
+                        }
+                        .accessibilityHint("Yade park ro ba taeed pak mikone.")
                     }
                 }
             }
@@ -78,44 +84,98 @@ private struct ParkingHomeView: View {
     }
 
     private var emptyState: some View {
-        ContentUnavailableView {
-            Label("Yade park nadari", systemImage: "car")
-        } description: {
-            Text("Alan mashineto park kardi? Ba ye tap jash ro save kon.")
-        } actions: {
-            Button("Mashinamo park kardam") {
-                viewModel.tapPark()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                Image(systemName: "parkingsign.circle.fill")
+                    .font(.system(size: 64))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.tint)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Parket ro yadet negah dar")
+                        .font(.largeTitle.weight(.bold))
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Ba ye tap, ye yade park save kon ta vaghti bargashti, mashineto rahat-tar peyda koni.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-            .buttonStyle(.borderedProminent)
-            .accessibilityHint("Yek yade park jadid save mikone.")
+            .frame(maxWidth: .infinity, minHeight: 420, alignment: .center)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 112)
+        }
+        .safeAreaInset(edge: .bottom) {
+            parkingActionBar {
+                Button {
+                    viewModel.tapPark()
+                } label: {
+                    Label("Mashinamo park kardam", systemImage: "car.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.glassProminent)
+                .accessibilityHint("Yek yade park jadid save mikone.")
+            }
         }
     }
 
     private var activeState: some View {
-        VStack(spacing: 24) {
-            Image(systemName: "car.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.tint)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 32) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Yade parket save shode", systemImage: "checkmark.circle.fill")
+                        .font(.headline)
+                        .foregroundStyle(.green)
 
-            VStack(spacing: 8) {
-                Text("Yade parket save shode")
-                    .font(.title2.weight(.semibold))
-                if let parkedAt = viewModel.activeMemory?.parkedAt {
-                    Text(parkedAt, style: .relative)
-                        .foregroundStyle(.secondary)
-                    Text(parkedAt, style: .time)
+                    Text("Jaye parket save shode.")
+                        .font(.largeTitle.weight(.bold))
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Vaghti bargashti, yadet mimune.")
+                        .font(.body)
                         .foregroundStyle(.secondary)
                 }
-            }
 
-            Button("Dobare park kardam") {
-                viewModel.tapPark()
+                if let parkedAt = viewModel.activeMemory?.parkedAt {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("Vaght-e park", systemImage: "clock")
+                            .font(.headline)
+
+                        Text(parkedAt, format: .dateTime.weekday(.wide).hour().minute())
+                            .font(.title3.weight(.semibold))
+
+                        Text(parkedAt, style: .relative)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .overlay(alignment: .top) {
+                        Divider()
+                    }
+                    .overlay(alignment: .bottom) {
+                        Divider()
+                    }
+                }
             }
-            .buttonStyle(.bordered)
-            .accessibilityHint("Ba taeed, yade park ghabli ro avaz mikone.")
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 112)
         }
-        .multilineTextAlignment(.center)
-        .padding()
+        .safeAreaInset(edge: .bottom) {
+            parkingActionBar {
+                Button {
+                    viewModel.tapPark()
+                } label: {
+                    Label("Dobare park kardam", systemImage: "arrow.triangle.2.circlepath")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.glass)
+                .accessibilityHint("Ba taeed, yade park ghabli ro avaz mikone.")
+            }
+        }
     }
 
     private var persistenceFailureState: some View {
@@ -123,12 +183,28 @@ private struct ParkingHomeView: View {
             Label("Save nashod", systemImage: "exclamationmark.triangle")
         } description: {
             Text("Yade park ro natoonestim az in iPhone bekhoonim ya save konim.")
-        } actions: {
-            Button("Dobare talash kon") {
-                viewModel.restore()
-            }
-            .buttonStyle(.bordered)
         }
+        .safeAreaInset(edge: .bottom) {
+            parkingActionBar {
+                Button {
+                    viewModel.restore()
+                } label: {
+                    Label("Dobare talash kon", systemImage: "arrow.clockwise")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.glass)
+            }
+        }
+    }
+
+    private func parkingActionBar<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .controlSize(.large)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
     }
 
     private func alertBinding(for screen: ParkingViewModel.Screen) -> Binding<Bool> {

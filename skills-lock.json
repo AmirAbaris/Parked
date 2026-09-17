@@ -25,6 +25,12 @@
       "skillPath": "skills/productivity/grilling/SKILL.md",
       "computedHash": "4dd886b0196bf43729d954ae326016f2bd9f5f79d892500b407c33a753362f14"
     },
+    "ios-glass-ui-designer": {
+      "source": "heyman333/atelier-ui",
+      "sourceType": "github",
+      "skillPath": "skills/ios-glass-ui-designer/SKILL.md",
+      "computedHash": "ccdd43e52f503441e7bcd8265863b6279cfbf9a18b9bae7c63f089477cf5a3db"
+    },
     "implement": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -42,6 +48,12 @@
       "sourceType": "github",
       "skillPath": "skills/setup-matt-pocock-skills/SKILL.md",
       "computedHash": "6398bf44baff9658da5e7989effd5b638ef72bb573cc491f7793d1485c232b49"
+    },
+    "swiftui-liquid-glass": {
+      "source": "dimillian/skills",
+      "sourceType": "github",
+      "skillPath": "swiftui-liquid-glass/SKILL.md",
+      "computedHash": "53dfbe810cf2044b9c9fff5b2b9d9888053ac24b7d72e63258df8859571bc599"
     },
     "to-spec": {
       "source": "mattpocock/skills",
