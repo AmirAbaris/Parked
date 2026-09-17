@@ -75,6 +75,75 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertTrue(try context.fetch(FetchDescriptor<ParkingMemory>()).isEmpty)
     }
 
+    func testSavingDetailsAddsEveryRecallCueAndPhoto() async throws {
+        let context = try makeContext()
+        let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
+        await state.tapPark().value
+        let photoData = Data([0x01, 0x02, 0x03])
+
+        state.beginEditingDetails()
+        state.saveDetails(
+            ParkingDetailsDraft(
+                floor: "B2",
+                section: "Abi",
+                spot: "C-14",
+                landmark: "Kenare asansor",
+                note: "Voroodi az khiaboon-e asli",
+                parkingPhotoData: photoData
+            )
+        )
+
+        XCTAssertEqual(state.screen, .active)
+        XCTAssertEqual(state.activeMemory?.floor, "B2")
+        XCTAssertEqual(state.activeMemory?.section, "Abi")
+        XCTAssertEqual(state.activeMemory?.spot, "C-14")
+        XCTAssertEqual(state.activeMemory?.landmark, "Kenare asansor")
+        XCTAssertEqual(state.activeMemory?.note, "Voroodi az khiaboon-e asli")
+        XCTAssertEqual(state.activeMemory?.parkingPhotoData, photoData)
+    }
+
+    func testSavingDetailsEditsExistingRecallCuesAndPhoto() async throws {
+        let context = try makeContext()
+        let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
+        await state.tapPark().value
+        state.beginEditingDetails()
+        state.saveDetails(ParkingDetailsDraft(floor: "1", parkingPhotoData: Data([0x01])))
+
+        state.beginEditingDetails()
+        state.saveDetails(ParkingDetailsDraft(floor: "2", parkingPhotoData: Data([0x02])))
+
+        XCTAssertEqual(state.activeMemory?.floor, "2")
+        XCTAssertEqual(state.activeMemory?.parkingPhotoData, Data([0x02]))
+        XCTAssertEqual(try context.fetch(FetchDescriptor<ParkingMemory>()).count, 1)
+    }
+
+    func testSavingBlankDetailsClearsRecallCuesAndPhoto() async throws {
+        let context = try makeContext()
+        let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
+        await state.tapPark().value
+        state.beginEditingDetails()
+        state.saveDetails(
+            ParkingDetailsDraft(
+                floor: "B2",
+                section: "Abi",
+                spot: "C-14",
+                landmark: "Kenare asansor",
+                note: "Nazdik-e khorooji",
+                parkingPhotoData: Data([0x01])
+            )
+        )
+
+        state.beginEditingDetails()
+        state.saveDetails(ParkingDetailsDraft(floor: "  ", note: "\n"))
+
+        XCTAssertNil(state.activeMemory?.floor)
+        XCTAssertNil(state.activeMemory?.section)
+        XCTAssertNil(state.activeMemory?.spot)
+        XCTAssertNil(state.activeMemory?.landmark)
+        XCTAssertNil(state.activeMemory?.note)
+        XCTAssertNil(state.activeMemory?.parkingPhotoData)
+    }
+
     private func makeContext() throws -> ModelContext {
         ModelContext(try makeContainer())
     }

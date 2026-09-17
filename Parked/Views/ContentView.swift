@@ -7,6 +7,7 @@
 
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -31,6 +32,7 @@ struct ContentView: View {
 
 private struct ParkingHomeView: View {
     @Bindable var viewModel: ParkingViewModel
+    @State private var detailsDraft: ParkingDetailsDraft?
 
     var body: some View {
         NavigationStack {
@@ -40,7 +42,7 @@ private struct ParkingHomeView: View {
                     emptyState
                 case .saving:
                     ProgressView("Darim yadet ro save mikonim…")
-                case .active, .replacementConfirmation, .completionConfirmation:
+                case .active, .editing, .replacementConfirmation, .completionConfirmation:
                     activeState
                 case .persistenceFailure:
                     persistenceFailureState
@@ -79,6 +81,21 @@ private struct ParkingHomeView: View {
                 }
             } message: {
                 Text("Yade park az ruye in iPhone pak mishe.")
+            }
+            .sheet(isPresented: detailsEditorBinding) {
+                if let detailsDraft {
+                    ParkingDetailsEditor(
+                        initialDraft: detailsDraft,
+                        onCancel: {
+                            self.detailsDraft = nil
+                            viewModel.cancelDetailsEditing()
+                        },
+                        onSave: { updatedDraft in
+                            viewModel.saveDetails(updatedDraft)
+                            self.detailsDraft = nil
+                        }
+                    )
+                }
             }
         }
     }
@@ -159,6 +176,10 @@ private struct ParkingHomeView: View {
                         Divider()
                     }
                 }
+
+                if let memory = viewModel.activeMemory {
+                    parkingDetails(memory)
+                }
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)
@@ -174,6 +195,67 @@ private struct ParkingHomeView: View {
                 }
                 .buttonStyle(.glass)
                 .accessibilityHint("Ba taeed, yade park ghabli ro avaz mikone.")
+            }
+        }
+    }
+
+    private func parkingDetails(_ memory: ParkingMemory) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Joz'iyat-e park")
+                    .font(.title2.weight(.semibold))
+
+                Spacer()
+
+                Button(memory.hasParkingDetails ? "Virayesh" : "Ezafe kon") {
+                    detailsDraft = viewModel.beginEditingDetails()
+                }
+            }
+
+            if let photoData = memory.parkingPhotoData,
+               let image = UIImage(data: photoData) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 220)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .accessibilityLabel("Aks-e park")
+            }
+
+            if memory.hasTextDetails {
+                VStack(alignment: .leading, spacing: 14) {
+                    parkingDetailRow("Tabaghe", value: memory.floor, systemImage: "square.stack.3d.up")
+                    parkingDetailRow("Bakhsh", value: memory.section, systemImage: "rectangle.split.3x1")
+                    parkingDetailRow("Ja ya sotoon", value: memory.spot, systemImage: "number")
+                    parkingDetailRow("Neshone", value: memory.landmark, systemImage: "mappin.and.ellipse")
+                    parkingDetailRow("Yaddasht", value: memory.note, systemImage: "note.text")
+                }
+            } else if memory.parkingPhotoData == nil {
+                Text("Tabaghe, bakhsh, ja, neshone ya aks ro faghat vaghti lazem dari ezafe kon.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder
+    private func parkingDetailRow(_ label: String, value: String?, systemImage: String) -> some View {
+        if let value {
+            Label {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(value)
+                        .font(.body)
+                }
+            } icon: {
+                Image(systemName: systemImage)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 24)
             }
         }
     }
@@ -214,6 +296,28 @@ private struct ParkingHomeView: View {
                 if !isPresented { viewModel.cancelConfirmation() }
             }
         )
+    }
+
+    private var detailsEditorBinding: Binding<Bool> {
+        Binding(
+            get: { detailsDraft != nil },
+            set: { isPresented in
+                if !isPresented, detailsDraft != nil {
+                    detailsDraft = nil
+                    viewModel.cancelDetailsEditing()
+                }
+            }
+        )
+    }
+}
+
+private extension ParkingMemory {
+    var hasTextDetails: Bool {
+        floor != nil || section != nil || spot != nil || landmark != nil || note != nil
+    }
+
+    var hasParkingDetails: Bool {
+        hasTextDetails || parkingPhotoData != nil
     }
 }
 

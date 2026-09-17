@@ -14,6 +14,7 @@ final class ParkingViewModel {
         case empty
         case saving
         case active
+        case editing
         case replacementConfirmation
         case completionConfirmation
         case persistenceFailure
@@ -84,6 +85,37 @@ final class ParkingViewModel {
         screen = .completionConfirmation
     }
 
+    @discardableResult
+    func beginEditingDetails() -> ParkingDetailsDraft? {
+        guard let activeMemory else { return nil }
+        screen = .editing
+        return ParkingDetailsDraft(memory: activeMemory)
+    }
+
+    func cancelDetailsEditing() {
+        guard activeMemory != nil else { return }
+        screen = .active
+    }
+
+    func saveDetails(_ draft: ParkingDetailsDraft) {
+        guard let activeMemory else { return }
+
+        activeMemory.floor = normalized(draft.floor)
+        activeMemory.section = normalized(draft.section)
+        activeMemory.spot = normalized(draft.spot)
+        activeMemory.landmark = normalized(draft.landmark)
+        activeMemory.note = normalized(draft.note)
+        activeMemory.parkingPhotoData = draft.parkingPhotoData
+
+        do {
+            try modelContext.save()
+            screen = .active
+        } catch {
+            modelContext.rollback()
+            screen = .persistenceFailure
+        }
+    }
+
     func confirmCompletion() {
         guard let activeMemory else { return }
         modelContext.delete(activeMemory)
@@ -133,5 +165,10 @@ final class ParkingViewModel {
             activeMemory = previousMemory
             screen = .persistenceFailure
         }
+    }
+
+    private func normalized(_ value: String) -> String? {
+        let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedValue.isEmpty ? nil : trimmedValue
     }
 }
