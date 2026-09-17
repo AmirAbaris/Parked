@@ -16,10 +16,19 @@ final class ParkingMemory {
     var landmark: String?
     var note: String?
     @Attribute(.externalStorage) var parkingPhotoData: Data?
+    var latitude: Double?
+    var longitude: Double?
+    var horizontalAccuracy: Double?
+    var locationCapturedAt: Date?
 
-    init(id: UUID = UUID(), parkedAt: Date) {
+    init(
+        id: UUID = UUID(),
+        parkedAt: Date,
+        locationEstimate: ParkingLocationEstimate? = nil
+    ) {
         self.id = id
         self.parkedAt = parkedAt
+        apply(locationEstimate)
     }
 
     func apply(_ draft: ParkingDetailsDraft) {
@@ -29,6 +38,48 @@ final class ParkingMemory {
         landmark = draft.normalizedLandmark
         note = draft.normalizedNote
         parkingPhotoData = draft.parkingPhotoData
+    }
+
+    func apply(_ estimate: ParkingLocationEstimate?) {
+        latitude = estimate?.latitude
+        longitude = estimate?.longitude
+        horizontalAccuracy = estimate?.horizontalAccuracy
+        locationCapturedAt = estimate?.capturedAt
+    }
+
+    var locationEstimate: ParkingLocationEstimate? {
+        guard let latitude,
+              let longitude,
+              let horizontalAccuracy,
+              let locationCapturedAt else { return nil }
+
+        let estimate = ParkingLocationEstimate(
+            latitude: latitude,
+            longitude: longitude,
+            horizontalAccuracy: horizontalAccuracy,
+            capturedAt: locationCapturedAt
+        )
+        return estimate.isUsable ? estimate : nil
+    }
+}
+
+struct ParkingLocationEstimate: Equatable, Sendable {
+    let latitude: Double
+    let longitude: Double
+    let horizontalAccuracy: Double
+    let capturedAt: Date
+
+    var isUsable: Bool {
+        latitude.isFinite
+            && longitude.isFinite
+            && horizontalAccuracy.isFinite
+            && (-90...90).contains(latitude)
+            && (-180...180).contains(longitude)
+            && horizontalAccuracy >= 0
+    }
+
+    func isMoreAccurate(than other: ParkingLocationEstimate) -> Bool {
+        horizontalAccuracy < other.horizontalAccuracy
     }
 }
 

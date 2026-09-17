@@ -20,6 +20,91 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertEqual(try context.fetch(FetchDescriptor<ParkingMemory>()).count, 1)
     }
 
+    func testAccurateLocationIsSavedWithItsAccuracy() async throws {
+        let context = try makeContext()
+        let estimate = makeEstimate(accuracy: 8)
+        let locationProvider = TestParkingLocationProvider(initialEstimate: estimate)
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+
+        await state.tapPark().value
+
+        XCTAssertEqual(state.activeMemory?.locationEstimate, estimate)
+        XCTAssertEqual(state.locationCaptureState, .saved(horizontalAccuracy: 8))
+    }
+
+    func testApproximateLocationIsAcceptedInsteadOfDiscarded() async throws {
+        let context = try makeContext()
+        let estimate = makeEstimate(accuracy: 850)
+        let locationProvider = TestParkingLocationProvider(initialEstimate: estimate)
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+
+        await state.tapPark().value
+
+        XCTAssertEqual(state.activeMemory?.locationEstimate, estimate)
+        XCTAssertEqual(state.activeMemory?.horizontalAccuracy, 850)
+    }
+
+    func testUnavailableLocationKeepsManualMemoryAndCanRetry() async throws {
+        let context = try makeContext()
+        let locationProvider = TestParkingLocationProvider()
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+
+        await state.tapPark().value
+        locationProvider.fail()
+
+        XCTAssertNotNil(state.activeMemory)
+        XCTAssertNil(state.activeMemory?.locationEstimate)
+        XCTAssertEqual(state.locationCaptureState, .unavailable)
+
+        state.keepManualParkingMemory()
+        XCTAssertEqual(state.locationCaptureState, .manual)
+
+        let recoveredEstimate = makeEstimate(accuracy: 30)
+        state.retryLocationCapture()
+        locationProvider.send(recoveredEstimate)
+
+        XCTAssertEqual(state.activeMemory?.locationEstimate, recoveredEstimate)
+        XCTAssertEqual(state.locationCaptureState, .saved(horizontalAccuracy: 30))
+    }
+
+    func testBetterReadingReplacesInitialEstimateDuringCaptureWindow() async throws {
+        let context = try makeContext()
+        let initialEstimate = makeEstimate(accuracy: 140)
+        let improvedEstimate = makeEstimate(accuracy: 18, capturedAtOffset: 2)
+        let locationProvider = TestParkingLocationProvider(initialEstimate: initialEstimate)
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+
+        await state.tapPark().value
+        locationProvider.send(improvedEstimate)
+
+        XCTAssertEqual(state.activeMemory?.locationEstimate, improvedEstimate)
+        XCTAssertEqual(state.locationCaptureState, .saved(horizontalAccuracy: 18))
+
+        let persistedMemory = try XCTUnwrap(
+            context.fetch(FetchDescriptor<ParkingMemory>()).first
+        )
+        XCTAssertEqual(persistedMemory.locationEstimate, improvedEstimate)
+
+        locationProvider.send(makeEstimate(accuracy: 90, capturedAtOffset: 3))
+        XCTAssertEqual(state.activeMemory?.locationEstimate, improvedEstimate)
+    }
+
     func testRestoreLoadsThePersistedActiveMemory() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
@@ -148,8 +233,53 @@ final class ParkingViewModelTests: XCTestCase {
         ModelContext(try makeContainer())
     }
 
+    private func makeEstimate(
+        accuracy: Double,
+        capturedAtOffset: TimeInterval = 0
+    ) -> ParkingLocationEstimate {
+        ParkingLocationEstimate(
+            latitude: 35.7219,
+            longitude: 51.3347,
+            horizontalAccuracy: accuracy,
+            capturedAt: parkedAt.addingTimeInterval(capturedAtOffset)
+        )
+    }
+
     private func makeContainer() throws -> ModelContainer {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         return try ModelContainer(for: ParkingMemory.self, configurations: configuration)
+    }
+}
+
+@MainActor
+private final class TestParkingLocationProvider: ParkingLocationProviding {
+    private let initialEstimate: ParkingLocationEstimate?
+    private var onUpdate: ((ParkingLocationEstimate) -> Void)?
+    private var onFailure: (() -> Void)?
+
+    init(initialEstimate: ParkingLocationEstimate? = nil) {
+        self.initialEstimate = initialEstimate
+    }
+
+    func startForegroundCapture(
+        onUpdate: @escaping (ParkingLocationEstimate) -> Void,
+        onFailure: @escaping () -> Void
+    ) -> ParkingLocationEstimate? {
+        self.onUpdate = onUpdate
+        self.onFailure = onFailure
+        return initialEstimate
+    }
+
+    func stopForegroundCapture() {
+        onUpdate = nil
+        onFailure = nil
+    }
+
+    func send(_ estimate: ParkingLocationEstimate) {
+        onUpdate?(estimate)
+    }
+
+    func fail() {
+        onFailure?()
     }
 }

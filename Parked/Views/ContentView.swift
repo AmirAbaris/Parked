@@ -11,6 +11,7 @@ import UIKit
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @State private var parkingViewModel: ParkingViewModel?
 
     var body: some View {
@@ -23,9 +24,17 @@ struct ContentView: View {
         }
         .task {
             guard parkingViewModel == nil else { return }
-            let viewModel = ParkingViewModel(modelContext: modelContext)
+            let viewModel = ParkingViewModel(
+                modelContext: modelContext,
+                locationProvider: CoreLocationParkingLocationProvider()
+            )
             viewModel.restore()
             parkingViewModel = viewModel
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                parkingViewModel?.stopLocationCaptureForBackground()
+            }
         }
     }
 }
@@ -140,6 +149,7 @@ private struct ParkingHomeView: View {
                 if let memory = viewModel.activeMemory {
                     VStack(alignment: .leading, spacing: 20) {
                         activeHero(memory)
+                        locationStatus
                         parkingDetails(memory)
                     }
                     .padding(.horizontal, 20)
@@ -304,6 +314,90 @@ private struct ParkingHomeView: View {
             }
         }
         .accessibilityElement(children: .contain)
+    }
+
+    private var locationStatus: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 12) {
+                switch viewModel.locationCaptureState {
+                case .idle:
+                    EmptyView()
+                case .capturing:
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text("Park save shode. Darim location ro migirim…")
+                    }
+                case let .saved(horizontalAccuracy):
+                    Text(locationAccuracyDescription(horizontalAccuracy))
+                        .foregroundStyle(.secondary)
+                    Text("In noghte taghribiye, khasatan too parking-e sarpooshide.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                case .unavailable:
+                    Text("Location gerefte nashod. Park-et bedoon location save shode.")
+                        .foregroundStyle(.secondary)
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 12) { locationRecoveryActions }
+                        VStack(alignment: .leading, spacing: 8) { locationRecoveryActions }
+                    }
+                case .manual:
+                    Text("In park bedoon location save shode.")
+                        .foregroundStyle(.secondary)
+                    Button("Location ezafe kon", systemImage: "location") {
+                        viewModel.retryLocationCapture()
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Label(locationStatusTitle, systemImage: locationStatusSystemImage)
+                .font(.headline)
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder
+    private var locationRecoveryActions: some View {
+        Button("Dobare talash kon", systemImage: "arrow.clockwise") {
+            viewModel.retryLocationCapture()
+        }
+        .buttonStyle(.borderedProminent)
+
+        Button("Bedoon location negah dar") {
+            viewModel.keepManualParkingMemory()
+        }
+        .buttonStyle(.bordered)
+    }
+
+    private var locationStatusTitle: String {
+        switch viewModel.locationCaptureState {
+        case .saved:
+            "Location-e taghribi save shod"
+        case .capturing:
+            "Dar hale gereftane location"
+        case .unavailable:
+            "Location dar dastres nist"
+        case .idle, .manual:
+            "Park-e bedoon location"
+        }
+    }
+
+    private var locationStatusSystemImage: String {
+        switch viewModel.locationCaptureState {
+        case .saved:
+            "location.fill"
+        case .capturing:
+            "location"
+        case .unavailable:
+            "location.slash"
+        case .idle, .manual:
+            "mappin.slash"
+        }
+    }
+
+    private func locationAccuracyDescription(_ horizontalAccuracy: Double) -> String {
+        let roundedAccuracy = Int(horizontalAccuracy.rounded(.up))
+        return "Deghat-e in estimate hodood \(roundedAccuracy) metre."
     }
 
     @ViewBuilder

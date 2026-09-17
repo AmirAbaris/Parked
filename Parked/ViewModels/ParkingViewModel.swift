@@ -20,15 +20,36 @@ final class ParkingViewModel {
         case persistenceFailure
     }
 
+    enum LocationCaptureState: Equatable {
+        case idle
+        case capturing
+        case saved(horizontalAccuracy: Double)
+        case unavailable
+        case manual
+    }
+
     private let modelContext: ModelContext
     private let now: () -> Date
+    private let locationProvider: ParkingLocationProviding?
+    private let locationCaptureWindowNanoseconds: UInt64
+    private var locationCaptureWindowTask: Task<Void, Never>?
+    private var pendingLocationEstimate: ParkingLocationEstimate?
+    private var isPreparingNewMemory = false
 
     private(set) var activeMemory: ParkingMemory?
     private(set) var screen: Screen = .empty
+    private(set) var locationCaptureState: LocationCaptureState = .idle
 
-    init(modelContext: ModelContext, now: @escaping () -> Date = Date.init) {
+    init(
+        modelContext: ModelContext,
+        now: @escaping () -> Date = Date.init,
+        locationProvider: ParkingLocationProviding? = nil,
+        locationCaptureWindowNanoseconds: UInt64 = 10_000_000_000
+    ) {
         self.modelContext = modelContext
         self.now = now
+        self.locationProvider = locationProvider
+        self.locationCaptureWindowNanoseconds = locationCaptureWindowNanoseconds
     }
 
     func restore() {
@@ -46,6 +67,7 @@ final class ParkingViewModel {
 
         activeMemory = memories.first
         screen = activeMemory == nil ? .empty : .active
+        locationCaptureState = activeMemory.map(locationState(for:)) ?? .idle
 
         // The app only has one active parking memory. Clean up any records left
         // behind by an interrupted older build before exposing the active one.
@@ -113,11 +135,13 @@ final class ParkingViewModel {
 
     func confirmCompletion() {
         guard let activeMemory else { return }
+        stopLocationCapture()
         modelContext.delete(activeMemory)
         do {
             try modelContext.save()
             self.activeMemory = nil
             screen = .empty
+            locationCaptureState = .idle
         } catch {
             modelContext.rollback()
             self.activeMemory = activeMemory
@@ -125,10 +149,28 @@ final class ParkingViewModel {
         }
     }
 
+    func retryLocationCapture() {
+        guard activeMemory != nil else { return }
+        beginLocationCapture(preparingNewMemory: false)
+        scheduleLocationCaptureWindowEnd()
+    }
+
+    func keepManualParkingMemory() {
+        guard activeMemory?.locationEstimate == nil else { return }
+        stopLocationCapture()
+        locationCaptureState = .manual
+    }
+
+    func stopLocationCaptureForBackground() {
+        guard activeMemory != nil || isPreparingNewMemory else { return }
+        finishLocationCaptureWindow()
+    }
+
     private func saveNewMemory(replacingActiveMemory: Bool = false) -> Task<Void, Never> {
         screen = .saving
         let previousMemory = activeMemory
         let parkedAt = now()
+        beginLocationCapture(preparingNewMemory: true)
 
         return Task { @MainActor in
             await Task.yield()
@@ -149,17 +191,127 @@ final class ParkingViewModel {
             modelContext.delete(activeMemory)
         }
 
-        let memory = ParkingMemory(parkedAt: parkedAt)
+        let memory = ParkingMemory(
+            parkedAt: parkedAt,
+            locationEstimate: pendingLocationEstimate
+        )
         modelContext.insert(memory)
         do {
             try modelContext.save()
             activeMemory = memory
             screen = .active
+            isPreparingNewMemory = false
+            pendingLocationEstimate = nil
+            locationCaptureState = locationStateWhileCapturing(for: memory)
+            scheduleLocationCaptureWindowEnd()
         } catch {
             modelContext.rollback()
             activeMemory = previousMemory
             screen = .persistenceFailure
+            isPreparingNewMemory = false
+            pendingLocationEstimate = nil
+            stopLocationCapture()
         }
+    }
+
+    private func beginLocationCapture(preparingNewMemory: Bool) {
+        stopLocationCapture()
+        isPreparingNewMemory = preparingNewMemory
+        pendingLocationEstimate = nil
+
+        guard let locationProvider else {
+            locationCaptureState = .manual
+            return
+        }
+
+        locationCaptureState = .capturing
+        let initialEstimate = locationProvider.startForegroundCapture(
+            onUpdate: { [weak self] estimate in
+                self?.receiveLocationEstimate(estimate)
+            },
+            onFailure: { [weak self] in
+                self?.locationCaptureFailed()
+            }
+        )
+        if let initialEstimate {
+            receiveLocationEstimate(initialEstimate)
+        }
+    }
+
+    private func receiveLocationEstimate(_ estimate: ParkingLocationEstimate) {
+        guard estimate.isUsable else { return }
+
+        if isPreparingNewMemory || activeMemory == nil {
+            if pendingLocationEstimate.map({ estimate.isMoreAccurate(than: $0) }) ?? true {
+                pendingLocationEstimate = estimate
+            }
+            locationCaptureState = .saved(horizontalAccuracy: pendingLocationEstimate?.horizontalAccuracy ?? estimate.horizontalAccuracy)
+            return
+        }
+
+        guard let activeMemory else { return }
+        if let savedEstimate = activeMemory.locationEstimate,
+           !estimate.isMoreAccurate(than: savedEstimate) {
+            locationCaptureState = .saved(horizontalAccuracy: savedEstimate.horizontalAccuracy)
+            return
+        }
+
+        activeMemory.apply(estimate)
+        do {
+            try modelContext.save()
+            locationCaptureState = .saved(horizontalAccuracy: estimate.horizontalAccuracy)
+        } catch {
+            modelContext.rollback()
+            screen = .persistenceFailure
+            stopLocationCapture()
+        }
+    }
+
+    private func locationCaptureFailed() {
+        guard pendingLocationEstimate == nil,
+              activeMemory?.locationEstimate == nil else { return }
+        locationCaptureState = .unavailable
+        stopLocationCapture()
+    }
+
+    private func scheduleLocationCaptureWindowEnd() {
+        guard locationProvider != nil else { return }
+        locationCaptureWindowTask?.cancel()
+        locationCaptureWindowTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            try? await Task.sleep(nanoseconds: locationCaptureWindowNanoseconds)
+            guard !Task.isCancelled else { return }
+            finishLocationCaptureWindow()
+        }
+    }
+
+    private func finishLocationCaptureWindow() {
+        let memory = activeMemory
+        stopLocationCapture()
+        locationCaptureState = memory.map(locationState(for:)) ?? .idle
+        if locationCaptureState == .manual {
+            locationCaptureState = .unavailable
+        }
+    }
+
+    private func stopLocationCapture() {
+        locationCaptureWindowTask?.cancel()
+        locationCaptureWindowTask = nil
+        locationProvider?.stopForegroundCapture()
+    }
+
+    private func locationState(for memory: ParkingMemory) -> LocationCaptureState {
+        if let estimate = memory.locationEstimate {
+            return .saved(horizontalAccuracy: estimate.horizontalAccuracy)
+        }
+        return .manual
+    }
+
+    private func locationStateWhileCapturing(for memory: ParkingMemory) -> LocationCaptureState {
+        if let estimate = memory.locationEstimate {
+            return .saved(horizontalAccuracy: estimate.horizontalAccuracy)
+        }
+        return locationProvider == nil ? .manual : .capturing
     }
 
 }
