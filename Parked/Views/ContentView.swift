@@ -31,6 +31,7 @@ struct ContentView: View {
 }
 
 private struct ParkingHomeView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Bindable var viewModel: ParkingViewModel
     @State private var detailsDraft: ParkingDetailsDraft?
 
@@ -41,7 +42,7 @@ private struct ParkingHomeView: View {
                 case .empty:
                     emptyState
                 case .saving:
-                    ProgressView("Darim yadet ro save mikonim…")
+                    ProgressView("Darim save mikonim…")
                 case .active, .editing, .replacementConfirmation, .completionConfirmation:
                     activeState
                 case .persistenceFailure:
@@ -50,37 +51,25 @@ private struct ParkingHomeView: View {
             }
             .navigationTitle("Parked")
             .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                if viewModel.activeMemory != nil {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            viewModel.requestCompletion()
-                        } label: {
-                            Label("Mashineto peyda kardi?", systemImage: "checkmark")
-                        }
-                        .accessibilityHint("Yade park ro ba taeed pak mikone.")
-                    }
-                }
-            }
-            .alert("Yade park ghabli avaz beshe?", isPresented: alertBinding(for: .replacementConfirmation)) {
+            .alert("Park-e ghabli avaz beshe?", isPresented: alertBinding(for: .replacementConfirmation)) {
                 Button("Avaz kon", role: .destructive) {
                     viewModel.confirmReplacement()
                 }
-                Button("Kheyr", role: .cancel) {
+                Button("Na", role: .cancel) {
                     viewModel.cancelConfirmation()
                 }
             } message: {
-                Text("Yade ghabli pak mishe va yade jadid save mishe.")
+                Text("Aks o joz'iyat-e park-e ghabli pak mishe.")
             }
-            .alert("Mashineto peyda kardi?", isPresented: alertBinding(for: .completionConfirmation)) {
-                Button("Bale, tamoom shod", role: .destructive) {
+            .alert("In park delete beshe?", isPresented: alertBinding(for: .completionConfirmation)) {
+                Button("Delete", role: .destructive) {
                     viewModel.confirmCompletion()
                 }
-                Button("Hanooz na", role: .cancel) {
+                Button("Na", role: .cancel) {
                     viewModel.cancelConfirmation()
                 }
             } message: {
-                Text("Yade park az ruye in iPhone pak mishe.")
+                Text("Aks o joz'iyat-e in park az in iPhone pak mishe.")
             }
             .sheet(isPresented: detailsEditorBinding) {
                 if let detailsDraft {
@@ -110,11 +99,11 @@ private struct ParkingHomeView: View {
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Parket ro yadet negah dar")
+                    Text("Jaye mashineto save kon")
                         .font(.largeTitle.weight(.bold))
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text("Ba ye tap, ye yade park save kon ta vaghti bargashti, mashineto rahat-tar peyda koni.")
+                    Text("Ba ye tap save kon. Aks o joz'iyat ro ba'dan ezafe kon.")
                         .font(.body)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -129,97 +118,109 @@ private struct ParkingHomeView: View {
                 Button {
                     viewModel.tapPark()
                 } label: {
-                    Label("Mashinamo park kardam", systemImage: "car.fill")
+                    Label("Park kardam", systemImage: "car.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.glassProminent)
-                .accessibilityHint("Yek yade park jadid save mikone.")
+                .accessibilityHint("Jaye park ro save mikone.")
             }
         }
     }
 
     private var activeState: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 32) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("Yade parket save shode", systemImage: "checkmark.circle.fill")
-                        .font(.headline)
-                        .foregroundStyle(.green)
-
-                    Text("Yade parket save shode.")
-                        .font(.largeTitle.weight(.bold))
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Text("Vaghti bargashti, yadet mimune.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                }
-
-                if let parkedAt = viewModel.activeMemory?.parkedAt {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("Vaght-e park", systemImage: "clock")
-                            .font(.headline)
-
-                        Text(parkedAt, format: .dateTime.weekday(.wide).hour().minute())
-                            .font(.title3.weight(.semibold))
-
-                        Text(parkedAt, style: .relative)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 20)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .overlay(alignment: .top) {
-                        Divider()
-                    }
-                    .overlay(alignment: .bottom) {
-                        Divider()
-                    }
-                }
-
-                if let memory = viewModel.activeMemory {
+            if let memory = viewModel.activeMemory {
+                VStack(alignment: .leading, spacing: 24) {
+                    parkingPhoto(memory)
+                    parkingTime(memory.parkedAt)
                     parkingDetails(memory)
                 }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+                .padding(.bottom, 112)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-            .padding(.bottom, 112)
         }
         .safeAreaInset(edge: .bottom) {
             parkingActionBar {
-                Button {
-                    viewModel.tapPark()
-                } label: {
-                    Label("Dobare park kardam", systemImage: "arrow.triangle.2.circlepath")
-                        .frame(maxWidth: .infinity)
+                GlassEffectContainer(spacing: 12) {
+                    activeActionLayout {
+                        Button {
+                            viewModel.tapPark()
+                        } label: {
+                            Label("Dobare park kardam", systemImage: "arrow.triangle.2.circlepath")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.glass)
+                        .accessibilityHint("Ba taeed, park-e ghabli ro avaz mikone.")
+
+                        Button(role: .destructive) {
+                            viewModel.requestCompletion()
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        .buttonStyle(.glass)
+                        .tint(.red)
+                        .accessibilityHint("Ba taeed, in park o joz'iyatesh ro pak mikone.")
+                    }
                 }
-                .buttonStyle(.glass)
-                .accessibilityHint("Ba taeed, yade park ghabli ro avaz mikone.")
             }
+        }
+    }
+
+    private var activeActionLayout: AnyLayout {
+        if dynamicTypeSize.isAccessibilitySize {
+            AnyLayout(VStackLayout(spacing: 12))
+        } else {
+            AnyLayout(HStackLayout(spacing: 12))
+        }
+    }
+
+    @ViewBuilder
+    private func parkingPhoto(_ memory: ParkingMemory) -> some View {
+        if let photoData = memory.parkingPhotoData,
+           let image = UIImage(data: photoData) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, maxHeight: 420)
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .accessibilityLabel("Aks-e park")
+        }
+    }
+
+    private func parkingTime(_ parkedAt: Date) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Label("Park shod", systemImage: "clock")
+                .font(.headline)
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(parkedAt, style: .relative)
+                    .font(.headline)
+
+                Text(parkedAt, format: .dateTime.weekday(.abbreviated).hour().minute())
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 16)
+        .overlay(alignment: .bottom) {
+            Divider()
         }
     }
 
     private func parkingDetails(_ memory: ParkingMemory) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Joz'iyat-e park")
+                Text("Joz'iyat")
                     .font(.title2.weight(.semibold))
 
                 Spacer()
 
-                Button(memory.hasParkingDetails ? "Virayesh" : "Ezafe kon") {
+                Button(memory.hasParkingDetails ? "Edit" : "Ezafe kon") {
                     detailsDraft = viewModel.beginEditingDetails()
                 }
-            }
-
-            if let photoData = memory.parkingPhotoData,
-               let image = UIImage(data: photoData) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity, maxHeight: 360)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .accessibilityLabel("Aks-e park")
             }
 
             if memory.hasTextDetails {
@@ -231,7 +232,7 @@ private struct ParkingHomeView: View {
                     parkingDetailRow("Yaddasht", value: memory.note, systemImage: "note.text")
                 }
             } else if memory.parkingPhotoData == nil {
-                Text("Tabaghe, bakhsh, ja, neshone ya aks ro faghat vaghti lazem dari ezafe kon.")
+                Text("Aks, tabaghe ya neshone ezafe kon.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -263,7 +264,7 @@ private struct ParkingHomeView: View {
         ContentUnavailableView {
             Label("Save nashod", systemImage: "exclamationmark.triangle")
         } description: {
-            Text("Yade park ro natoonestim az in iPhone bekhoonim ya save konim.")
+            Text("Park ro natoonestim az in iPhone bekhoonim ya save konim.")
         }
         .safeAreaInset(edge: .bottom) {
             parkingActionBar {
