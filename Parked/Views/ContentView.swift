@@ -189,11 +189,9 @@ private struct ParkingHomeView: View {
     }
 
     private func parkingTime(_ parkedAt: Date) -> some View {
-        HStack(alignment: .firstTextBaseline) {
+        parkingTimeLayout {
             Label("Park shod", systemImage: "clock")
                 .font(.headline)
-
-            Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
                 Text(parkedAt, style: .relative)
@@ -203,10 +201,22 @@ private struct ParkingHomeView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .frame(
+                maxWidth: .infinity,
+                alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing
+            )
         }
         .padding(.vertical, 16)
         .overlay(alignment: .bottom) {
             Divider()
+        }
+    }
+
+    private var parkingTimeLayout: AnyLayout {
+        if dynamicTypeSize.isAccessibilitySize {
+            AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+        } else {
+            AnyLayout(HStackLayout(alignment: .firstTextBaseline))
         }
     }
 
