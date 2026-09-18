@@ -174,10 +174,11 @@ private struct ParkingHomeView: View {
                         Button {
                             viewModel.tapPark()
                         } label: {
-                            Label("Dobare park kardam", systemImage: "arrow.triangle.2.circlepath")
-                                .frame(maxWidth: .infinity)
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .frame(width: 44, height: 44)
                         }
                         .buttonStyle(.glass)
+                        .accessibilityLabel("Dobare park kardam")
                         .accessibilityHint("Ba taeed, park-e ghabli ro avaz mikone.")
                     }
                     .frame(maxWidth: .infinity)
