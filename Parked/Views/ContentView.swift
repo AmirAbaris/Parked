@@ -160,30 +160,24 @@ private struct ParkingHomeView: View {
         }
         .safeAreaInset(edge: .bottom) {
             parkingActionBar {
-                GlassEffectContainer(spacing: 12) {
-                    activeActionLayout {
-                        Button {
-                            viewModel.requestCompletion()
-                        } label: {
-                            Label("Peydash kardam", systemImage: "checkmark")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.glassProminent)
-                        .accessibilityHint("Baraye pak kardane in parking memory taeed migire.")
-
-                        Button {
-                            viewModel.tapPark()
-                        } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .frame(width: 44, height: 44)
-                        }
-                        .buttonStyle(.glass)
-                        .accessibilityLabel("Dobare park kardam")
-                        .accessibilityHint("Ba taeed, park-e ghabli ro avaz mikone.")
+                VStack(spacing: 4) {
+                    Button {
+                        viewModel.requestCompletion()
+                    } label: {
+                        Label("Peydash kardam", systemImage: "checkmark")
+                            .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
+                    .buttonStyle(.glassProminent)
+                    .accessibilityHint("Baraye pak kardane in parking memory taeed migire.")
+
+                    Button("Dobare park kardam", systemImage: "arrow.triangle.2.circlepath") {
+                        viewModel.tapPark()
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .accessibilityHint("Ba taeed, park-e ghabli ro avaz mikone.")
                 }
-                .controlSize(.regular)
             }
         }
     }
@@ -215,14 +209,6 @@ private struct ParkingHomeView: View {
             Color.green.opacity(0.08),
             in: RoundedRectangle(cornerRadius: 28, style: .continuous)
         )
-    }
-
-    private var activeActionLayout: AnyLayout {
-        if dynamicTypeSize.isAccessibilitySize {
-            AnyLayout(VStackLayout(spacing: 12))
-        } else {
-            AnyLayout(HStackLayout(spacing: 12))
-        }
     }
 
     @ViewBuilder
