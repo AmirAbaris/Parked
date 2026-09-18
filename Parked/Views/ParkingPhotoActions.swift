@@ -19,6 +19,7 @@ struct ParkingPhotoActions: ViewModifier {
         content
             .confirmationDialog("Aks-e park", isPresented: $isShowingChoices) {
                 Button("Ba doorbin begir", systemImage: "camera") {
+                    selectedPhoto = nil
                     openCamera()
                 }
                 Button("Az Photos entekhab kon", systemImage: "photo.on.rectangle") {
@@ -27,6 +28,7 @@ struct ParkingPhotoActions: ViewModifier {
                 }
                 if hasPhoto {
                     Button("Aks ro pak kon", systemImage: "trash", role: .destructive) {
+                        selectedPhoto = nil
                         onSave(nil, memoryID)
                     }
                 }
@@ -63,13 +65,14 @@ struct ParkingPhotoActions: ViewModifier {
                     guard let data = try await selectedPhoto.loadTransferable(type: Data.self),
                           let image = UIImage(data: data),
                           let jpeg = image.jpegData(compressionQuality: 0.85) else {
+                        guard !Task.isCancelled, self.selectedPhoto == selectedPhoto else { return }
                         isShowingPhotoError = true
                         return
                     }
-                    guard !Task.isCancelled else { return }
+                    guard !Task.isCancelled, self.selectedPhoto == selectedPhoto else { return }
                     onSave(jpeg, targetMemoryID)
                 } catch {
-                    guard !Task.isCancelled else { return }
+                    guard !Task.isCancelled, self.selectedPhoto == selectedPhoto else { return }
                     isShowingPhotoError = true
                 }
             }
