@@ -211,15 +211,10 @@ private struct ParkingHomeView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            if #available(iOS 26, *) {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(.clear)
-                    .glassEffect(.regular.tint(.green.opacity(0.08)), in: .rect(cornerRadius: 28))
-            } else {
-                RoundedRectangle(cornerRadius: 28, style: .continuous).fill(.regularMaterial)
-            }
-        }
+        .background(
+            Color.green.opacity(0.08),
+            in: RoundedRectangle(cornerRadius: 28, style: .continuous)
+        )
     }
 
     private var activeActionLayout: AnyLayout {
