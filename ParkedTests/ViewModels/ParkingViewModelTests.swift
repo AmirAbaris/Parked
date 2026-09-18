@@ -202,11 +202,12 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertTrue(try context.fetch(FetchDescriptor<ParkingMemory>()).isEmpty)
     }
 
-    func testSavingDetailsAddsEveryRecallCueAndPhoto() async throws {
+    func testSavingDetailsPreservesIndependentlySavedPhoto() async throws {
         let context = try makeContext()
         let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
         await state.tapPark().value
         let photoData = Data([0x01, 0x02, 0x03])
+        state.savePhoto(photoData, for: try XCTUnwrap(state.activeMemory).id)
 
         state.beginEditingDetails()
         state.saveDetails(
@@ -215,8 +216,7 @@ final class ParkingViewModelTests: XCTestCase {
                 section: "Abi",
                 spot: "C-14",
                 landmark: "Kenare asansor",
-                note: "Voroodi az khiaboon-e asli",
-                parkingPhotoData: photoData
+                note: "Voroodi az khiaboon-e asli"
             )
         )
 
@@ -234,17 +234,20 @@ final class ParkingViewModelTests: XCTestCase {
         let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
         await state.tapPark().value
         state.beginEditingDetails()
-        state.saveDetails(ParkingDetailsDraft(floor: "1", parkingPhotoData: Data([0x01])))
+        state.saveDetails(ParkingDetailsDraft(floor: "1"))
+        let memoryID = try XCTUnwrap(state.activeMemory).id
+        state.savePhoto(Data([0x01]), for: memoryID)
 
         state.beginEditingDetails()
-        state.saveDetails(ParkingDetailsDraft(floor: "2", parkingPhotoData: Data([0x02])))
+        state.saveDetails(ParkingDetailsDraft(floor: "2"))
+        state.savePhoto(Data([0x02]), for: memoryID)
 
         XCTAssertEqual(state.activeMemory?.floor, "2")
         XCTAssertEqual(state.activeMemory?.parkingPhotoData, Data([0x02]))
         XCTAssertEqual(try context.fetch(FetchDescriptor<ParkingMemory>()).count, 1)
     }
 
-    func testSavingBlankDetailsClearsRecallCuesAndPhoto() async throws {
+    func testSavingBlankDetailsClearsRecallCuesButPreservesPhoto() async throws {
         let context = try makeContext()
         let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
         await state.tapPark().value
@@ -255,11 +258,11 @@ final class ParkingViewModelTests: XCTestCase {
                 section: "Abi",
                 spot: "C-14",
                 landmark: "Kenare asansor",
-                note: "Nazdik-e khorooji",
-                parkingPhotoData: Data([0x01])
+                note: "Nazdik-e khorooji"
             )
         )
 
+        state.savePhoto(Data([0x01]), for: try XCTUnwrap(state.activeMemory).id)
         state.beginEditingDetails()
         state.saveDetails(ParkingDetailsDraft(floor: "  ", note: "\n"))
 
@@ -268,7 +271,38 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertNil(state.activeMemory?.spot)
         XCTAssertNil(state.activeMemory?.landmark)
         XCTAssertNil(state.activeMemory?.note)
+        XCTAssertEqual(state.activeMemory?.parkingPhotoData, Data([0x01]))
+    }
+
+    func testPhotoChangesPersistWithoutChangingDetails() async throws {
+        let context = try makeContext()
+        let state = ParkingViewModel(modelContext: context)
+        await state.tapPark().value
+        let memoryID = try XCTUnwrap(state.activeMemory).id
+        state.saveDetails(ParkingDetailsDraft(floor: "B2", note: "Kenare asansor"))
+
+        state.savePhoto(Data([0x01]), for: memoryID)
+        state.restore()
+        XCTAssertEqual(state.screen, .active)
+        XCTAssertEqual(state.activeMemory?.parkingPhotoData, Data([0x01]))
+        XCTAssertEqual(state.activeMemory?.floor, "B2")
+
+        state.savePhoto(nil, for: memoryID)
+        state.restore()
         XCTAssertNil(state.activeMemory?.parkingPhotoData)
+        XCTAssertEqual(state.activeMemory?.note, "Kenare asansor")
+    }
+
+    func testDelayedPhotoCannotAttachToReplacementMemory() async throws {
+        let state = ParkingViewModel(modelContext: try makeContext())
+        await state.tapPark().value
+        let oldID = try XCTUnwrap(state.activeMemory).id
+        await state.confirmReplacement().value
+
+        state.savePhoto(Data([0x01]), for: oldID)
+
+        XCTAssertNil(state.activeMemory?.parkingPhotoData)
+        XCTAssertEqual(state.screen, .active)
     }
 
     private func makeContext() throws -> ModelContext {

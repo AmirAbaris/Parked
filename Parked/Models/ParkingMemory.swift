@@ -37,7 +37,6 @@ final class ParkingMemory {
         spot = draft.normalizedSpot
         landmark = draft.normalizedLandmark
         note = draft.normalizedNote
-        parkingPhotoData = draft.parkingPhotoData
     }
 
     func apply(_ estimate: ParkingLocationEstimate?) {
@@ -89,22 +88,19 @@ struct ParkingDetailsDraft: Equatable {
     var spot: String
     var landmark: String
     var note: String
-    var parkingPhotoData: Data?
 
     init(
         floor: String = "",
         section: String = "",
         spot: String = "",
         landmark: String = "",
-        note: String = "",
-        parkingPhotoData: Data? = nil
+        note: String = ""
     ) {
         self.floor = floor
         self.section = section
         self.spot = spot
         self.landmark = landmark
         self.note = note
-        self.parkingPhotoData = parkingPhotoData
     }
 
     init(memory: ParkingMemory) {
@@ -113,8 +109,7 @@ struct ParkingDetailsDraft: Equatable {
             section: memory.section ?? "",
             spot: memory.spot ?? "",
             landmark: memory.landmark ?? "",
-            note: memory.note ?? "",
-            parkingPhotoData: memory.parkingPhotoData
+            note: memory.note ?? ""
         )
     }
 

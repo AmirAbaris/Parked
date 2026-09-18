@@ -43,7 +43,7 @@ private struct ParkingHomeView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Bindable var viewModel: ParkingViewModel
     @State private var detailsDraft: ParkingDetailsDraft?
-    @State private var detailsEditorStartsWithPhotoPicker = false
+    @State private var isShowingPhotoChoices = false
 
     var body: some View {
         NavigationStack {
@@ -85,16 +85,13 @@ private struct ParkingHomeView: View {
                 if let detailsDraft {
                     ParkingDetailsEditor(
                         initialDraft: detailsDraft,
-                        startsWithPhotoPicker: detailsEditorStartsWithPhotoPicker,
                         onCancel: {
                             self.detailsDraft = nil
-                            detailsEditorStartsWithPhotoPicker = false
                             viewModel.cancelDetailsEditing()
                         },
                         onSave: { updatedDraft in
                             viewModel.saveDetails(updatedDraft)
                             self.detailsDraft = nil
-                            detailsEditorStartsWithPhotoPicker = false
                         }
                     )
                 }
@@ -153,6 +150,14 @@ private struct ParkingHomeView: View {
                 if let memory = viewModel.activeMemory {
                     VStack(alignment: .leading, spacing: 20) {
                         activeHero(memory)
+                            .modifier(ParkingPhotoActions(
+                                isShowingChoices: $isShowingPhotoChoices,
+                                memoryID: memory.id,
+                                hasPhoto: memory.parkingPhotoData != nil,
+                                onSave: { data, memoryID in
+                                    viewModel.savePhoto(data, for: memoryID)
+                                }
+                            ))
                         parkingDetails(memory)
                         locationStatus
                     }
@@ -247,7 +252,7 @@ private struct ParkingHomeView: View {
                 .accessibilityLabel("Aks-e park")
                 .overlay(alignment: .topTrailing) {
                     Button {
-                        openDetailsEditor(startsWithPhotoPicker: true)
+                        isShowingPhotoChoices = true
                     } label: {
                         Image(systemName: "pencil")
                             .frame(width: 20, height: 20)
@@ -263,7 +268,7 @@ private struct ParkingHomeView: View {
 
     private var addPhotoButton: some View {
         Button {
-            openDetailsEditor(startsWithPhotoPicker: true)
+            isShowingPhotoChoices = true
         } label: {
             VStack(spacing: 8) {
                 Image(systemName: "photo.badge.plus")
@@ -435,8 +440,7 @@ private struct ParkingHomeView: View {
         return "\(elapsedHours / 24) rooz"
     }
 
-    private func openDetailsEditor(startsWithPhotoPicker: Bool = false) {
-        detailsEditorStartsWithPhotoPicker = startsWithPhotoPicker
+    private func openDetailsEditor() {
         detailsDraft = viewModel.beginEditingDetails()
     }
 
@@ -504,7 +508,6 @@ private struct ParkingHomeView: View {
             set: { isPresented in
                 if !isPresented, viewModel.screen == .editing {
                     detailsDraft = nil
-                    detailsEditorStartsWithPhotoPicker = false
                     viewModel.cancelDetailsEditing()
                 }
             }

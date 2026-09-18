@@ -134,6 +134,17 @@ final class ParkingViewModel {
         }
     }
 
+    func savePhoto(_ data: Data?, for memoryID: UUID) {
+        guard let activeMemory, activeMemory.id == memoryID else { return }
+        activeMemory.parkingPhotoData = data
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            screen = .persistenceFailure
+        }
+    }
+
     func confirmCompletion() {
         guard let activeMemory else { return }
         stopLocationCapture()
