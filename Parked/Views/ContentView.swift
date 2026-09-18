@@ -149,8 +149,8 @@ private struct ParkingHomeView: View {
                 if let memory = viewModel.activeMemory {
                     VStack(alignment: .leading, spacing: 20) {
                         activeHero(memory)
-                        locationStatus
                         parkingDetails(memory)
+                        locationStatus
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
@@ -284,62 +284,95 @@ private struct ParkingHomeView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(20)
-        .background {
-            if #available(iOS 26, *) {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.clear)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 24))
-            } else {
-                RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.background)
-            }
-        }
+        .parkingSectionStyle()
         .accessibilityElement(children: .contain)
     }
 
+    @ViewBuilder
     private var locationStatus: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 12) {
-                switch viewModel.locationCaptureState {
-                case .idle:
-                    EmptyView()
-                case .capturing:
-                    HStack(spacing: 10) {
-                        ProgressView()
-                        Text("Park save shode. Darim location ro migirim…")
-                    }
-                case let .saved(horizontalAccuracy):
-                    Text(locationAccuracyDescription(horizontalAccuracy))
-                        .foregroundStyle(.secondary)
-                    Text("In noghte taghribiye, khasatan too parking-e sarpooshide.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                case .unavailable:
-                    Text("Location gerefte nashod. Park-et bedoon location save shode.")
-                        .foregroundStyle(.secondary)
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 12) { locationRecoveryActions }
-                        VStack(alignment: .leading, spacing: 8) { locationRecoveryActions }
-                    }
-                case .manual:
-                    Text("In park bedoon location save shode.")
-                        .foregroundStyle(.secondary)
-                    Button("Location ezafe kon", systemImage: "location") {
-                        viewModel.retryLocationCapture()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
+        switch viewModel.locationCaptureState {
+        case .idle:
+            EmptyView()
+        case .capturing:
+            locationStatusCard(
+                status: "Dar hale gereftan",
+                systemImage: "location"
+            ) {
+                HStack(alignment: .top, spacing: 10) {
+                    ProgressView()
+                    Text("Park save shode. Darim location-e taghribi ro ham ezafe mikonim…")
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            Label(
-                locationStatusPresentation.title,
-                systemImage: locationStatusPresentation.systemImage
-            )
-                .font(.headline)
+        case let .saved(horizontalAccuracy):
+            locationStatusCard(
+                status: "Save shode",
+                systemImage: "location.fill",
+                statusColor: .green
+            ) {
+                Text(locationAccuracyDescription(horizontalAccuracy))
+                    .font(.body.weight(.medium))
+                Text("In noghte taghribiye. Too parking-e sarpooshide momkene deghatesh kamtar bashe.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        case .unavailable:
+            locationStatusCard(
+                status: "Save nashod",
+                systemImage: "location.slash",
+                statusColor: .orange
+            ) {
+                Text("Park bedoon location save shode. Aks o joz'iyat-et hamchenan hast.")
+                    .foregroundStyle(.secondary)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 12) { locationRecoveryActions }
+                    VStack(alignment: .leading, spacing: 8) { locationRecoveryActions }
+                }
+            }
+        case .manual:
+            locationStatusCard(
+                status: "Ezafe nashode",
+                systemImage: "mappin.slash"
+            ) {
+                Text("In park bedoon location save shode. Mitoni har vaght khasti ezafash koni.")
+                    .foregroundStyle(.secondary)
+                Button("Location ezafe kon", systemImage: "location") {
+                    viewModel.retryLocationCapture()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+            }
         }
+    }
+
+    private func locationStatusCard<Content: View>(
+        status: String,
+        systemImage: String,
+        statusColor: Color = .secondary,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            locationHeaderLayout {
+                Label("Location-e park", systemImage: systemImage)
+                    .font(.headline)
+
+                Text(status)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(statusColor)
+                    .frame(maxWidth: .infinity, alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing)
+            }
+
+            content()
+        }
+        .parkingSectionStyle()
         .accessibilityElement(children: .contain)
+    }
+
+    private var locationHeaderLayout: AnyLayout {
+        if dynamicTypeSize.isAccessibilitySize {
+            AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+        } else {
+            AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 12))
+        }
     }
 
     @ViewBuilder
@@ -357,22 +390,9 @@ private struct ParkingHomeView: View {
         .controlSize(.large)
     }
 
-    private var locationStatusPresentation: (title: String, systemImage: String) {
-        switch viewModel.locationCaptureState {
-        case .saved:
-            ("Location-e taghribi save shod", "location.fill")
-        case .capturing:
-            ("Dar hale gereftane location", "location")
-        case .unavailable:
-            ("Location dar dastres nist", "location.slash")
-        case .idle, .manual:
-            ("Park-e bedoon location", "mappin.slash")
-        }
-    }
-
     private func locationAccuracyDescription(_ horizontalAccuracy: Double) -> String {
         let roundedAccuracy = Int(horizontalAccuracy.rounded(.up))
-        return "Deghat-e in estimate hodood \(roundedAccuracy) metre."
+        return "Location ta hodood \(roundedAccuracy) metre deghat dare."
     }
 
     @ViewBuilder
@@ -453,6 +473,17 @@ private extension ParkingMemory {
 
     var hasParkingDetails: Bool {
         hasTextDetails || parkingPhotoData != nil
+    }
+}
+
+private extension View {
+    func parkingSectionStyle() -> some View {
+        padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                Color(uiColor: .secondarySystemGroupedBackground),
+                in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+            )
     }
 }
 
