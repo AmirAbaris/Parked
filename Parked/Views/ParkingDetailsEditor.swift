@@ -17,10 +17,12 @@ struct ParkingDetailsEditor: View {
 
     init(
         initialDraft: ParkingDetailsDraft,
+        startsWithPhotoPicker: Bool = false,
         onCancel: @escaping () -> Void,
         onSave: @escaping (ParkingDetailsDraft) -> Void
     ) {
         _draft = State(initialValue: initialDraft)
+        _isShowingPhotoChoices = State(initialValue: startsWithPhotoPicker)
         self.onCancel = onCancel
         self.onSave = onSave
     }
