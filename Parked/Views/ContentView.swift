@@ -70,15 +70,15 @@ private struct ParkingHomeView: View {
             } message: {
                 Text("Aks o joz'iyat-e park-e ghabli pak mishe.")
             }
-            .alert("In park delete beshe?", isPresented: alertBinding(for: .completionConfirmation)) {
-                Button("Delete", role: .destructive) {
+            .alert("Mashineto peyda kardi?", isPresented: alertBinding(for: .completionConfirmation)) {
+                Button("Are, peydash kardam", role: .destructive) {
                     viewModel.confirmCompletion()
                 }
                 Button("Na", role: .cancel) {
                     viewModel.cancelConfirmation()
                 }
             } message: {
-                Text("Aks o joz'iyat-e in park az in iPhone pak mishe.")
+                Text("Ba taeed, in parking memory az in iPhone pak mishe.")
             }
             .sheet(isPresented: detailsEditorBinding) {
                 if let detailsDraft {
@@ -163,6 +163,15 @@ private struct ParkingHomeView: View {
                 GlassEffectContainer(spacing: 12) {
                     activeActionLayout {
                         Button {
+                            viewModel.requestCompletion()
+                        } label: {
+                            Label("Peydash kardam", systemImage: "checkmark")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .accessibilityHint("Baraye pak kardane in parking memory taeed migire.")
+
+                        Button {
                             viewModel.tapPark()
                         } label: {
                             Label("Dobare park kardam", systemImage: "arrow.triangle.2.circlepath")
@@ -170,20 +179,10 @@ private struct ParkingHomeView: View {
                         }
                         .buttonStyle(.glass)
                         .accessibilityHint("Ba taeed, park-e ghabli ro avaz mikone.")
-
-                        Button(role: .destructive) {
-                            viewModel.requestCompletion()
-                        } label: {
-                            Image(systemName: "trash")
-                                .frame(width: 44, height: 44)
-                        }
-                        .buttonStyle(.glass)
-                        .tint(.red)
-                        .accessibilityLabel("Delete")
-                        .accessibilityHint("Ba taeed, in park o joz'iyatesh ro pak mikone.")
                     }
                     .frame(maxWidth: .infinity)
                 }
+                .controlSize(.regular)
             }
         }
     }
