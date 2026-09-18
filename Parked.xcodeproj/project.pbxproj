@@ -309,11 +309,11 @@
 				DEVELOPMENT_TEAM = 72FVTVR4BT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Parked az doorbin baraye sabt-e neshane-ye mahal-e park estefade mikone.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Parked location-e alan ro migire ta mahal-e taghribi-e parking ro save kone.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Parked az doorbin baraye sabt-e neshane-ye mahal-e park estefade mikone.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Parked location-e alan ro migire ta mahal-e taghribi-e parking ro save kone.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -343,11 +343,11 @@
 				DEVELOPMENT_TEAM = 72FVTVR4BT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Parked az doorbin baraye sabt-e neshane-ye mahal-e park estefade mikone.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Parked location-e alan ro migire ta mahal-e taghribi-e parking ro save kone.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Parked az doorbin baraye sabt-e neshane-ye mahal-e park estefade mikone.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Parked location-e alan ro migire ta mahal-e taghribi-e parking ro save kone.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
