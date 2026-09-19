@@ -305,6 +305,142 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertEqual(state.screen, .active)
     }
 
+    func testFindMyCarLocationBackedMemoryUpdatesDistanceAndOffersDirections() async throws {
+        let context = try makeContext()
+        let savedEstimate = makeEstimate(accuracy: 35)
+        let currentEstimate = ParkingLocationEstimate(
+            latitude: 35.7319,
+            longitude: 51.3347,
+            horizontalAccuracy: 12,
+            capturedAt: parkedAt
+        )
+        let locationProvider = TestParkingLocationProvider(initialEstimate: savedEstimate)
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+        await state.tapPark().value
+
+        state.beginFindMyCar()
+        locationProvider.send(currentEstimate)
+
+        XCTAssertEqual(state.findMyCarLocationState, .available)
+        XCTAssertEqual(try XCTUnwrap(state.returnDistanceMeters), 1_111.95, accuracy: 0.5)
+        XCTAssertEqual(state.returnDistanceDescription, "1.1 km")
+        XCTAssertNotNil(state.directionsURL)
+        XCTAssertEqual(locationProvider.startCount, 2)
+    }
+
+    func testFindMyCarManualMemoryShowsRecallCuesOnlyAndDoesNotStartLocation() async throws {
+        let context = try makeContext()
+        let locationProvider = TestParkingLocationProvider()
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+        await state.tapPark().value
+        locationProvider.fail()
+        state.keepManualParkingMemory()
+        let startsBeforeFindMyCar = locationProvider.startCount
+
+        state.beginFindMyCar()
+
+        XCTAssertEqual(state.findMyCarLocationState, .recallCuesOnly)
+        XCTAssertNil(state.returnDistanceMeters)
+        XCTAssertNil(state.directionsURL)
+        XCTAssertEqual(locationProvider.startCount, startsBeforeFindMyCar)
+    }
+
+    func testFindMyCarLocationFailureKeepsDirectionsAndSavedMemoryAvailable() async throws {
+        let context = try makeContext()
+        let savedEstimate = makeEstimate(accuracy: 600)
+        let locationProvider = TestParkingLocationProvider(initialEstimate: savedEstimate)
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+        await state.tapPark().value
+
+        state.beginFindMyCar()
+        locationProvider.fail()
+
+        XCTAssertEqual(state.findMyCarLocationState, .unavailable)
+        XCTAssertNil(state.returnDistanceMeters)
+        XCTAssertNotNil(state.activeMemory)
+        XCTAssertNotNil(state.directionsURL)
+    }
+
+    func testLeavingFindMyCarAndEnteringBackgroundStopsCurrentLocationUpdates() async throws {
+        let context = try makeContext()
+        let locationProvider = TestParkingLocationProvider(initialEstimate: makeEstimate(accuracy: 10))
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+        await state.tapPark().value
+
+        state.beginFindMyCar()
+        let stopsBeforeLeaving = locationProvider.stopCount
+        state.endFindMyCar()
+
+        XCTAssertEqual(locationProvider.stopCount, stopsBeforeLeaving + 1)
+
+        state.beginFindMyCar()
+        let stopsBeforeBackground = locationProvider.stopCount
+        state.stopLocationCaptureForBackground()
+
+        XCTAssertEqual(locationProvider.stopCount, stopsBeforeBackground + 1)
+        XCTAssertEqual(state.findMyCarLocationState, .idle)
+
+        let startsBeforeForeground = locationProvider.startCount
+        state.resumeFindMyCarAfterForeground()
+
+        XCTAssertEqual(locationProvider.startCount, startsBeforeForeground + 1)
+        XCTAssertEqual(state.findMyCarLocationState, .available)
+    }
+
+    func testFindMyCarHidesMapAndDirectionsWhenNetworkIsUnavailable() async throws {
+        let context = try makeContext()
+        let locationProvider = TestParkingLocationProvider(initialEstimate: makeEstimate(accuracy: 20))
+        let mapAvailabilityProvider = TestParkingMapAvailabilityProvider(isAvailable: true)
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider,
+            mapAvailabilityProvider: mapAvailabilityProvider
+        )
+        await state.tapPark().value
+
+        state.beginFindMyCar()
+        mapAvailabilityProvider.send(isAvailable: false)
+
+        XCTAssertEqual(state.mapAvailabilityState, .unavailable)
+        XCTAssertNil(state.directionsURL)
+        XCTAssertNotNil(state.activeMemory)
+    }
+
+    func testFindMyCarHidesMapAndDirectionsWhenMapTilesFailToLoad() async throws {
+        let context = try makeContext()
+        let locationProvider = TestParkingLocationProvider(initialEstimate: makeEstimate(accuracy: 20))
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+        await state.tapPark().value
+
+        state.beginFindMyCar()
+        state.mapDidFailToLoad()
+
+        XCTAssertEqual(state.mapAvailabilityState, .unavailable)
+        XCTAssertNil(state.directionsURL)
+        XCTAssertNotNil(state.activeMemory)
+    }
+
     private func makeContext() throws -> ModelContext {
         ModelContext(try makeContainer())
     }
@@ -332,6 +468,8 @@ private final class TestParkingLocationProvider: ParkingLocationProviding {
     var initialEstimate: ParkingLocationEstimate?
     private var onUpdate: ((ParkingLocationEstimate) -> Void)?
     private var onFailure: (() -> Void)?
+    private(set) var startCount = 0
+    private(set) var stopCount = 0
 
     init(initialEstimate: ParkingLocationEstimate? = nil) {
         self.initialEstimate = initialEstimate
@@ -341,12 +479,14 @@ private final class TestParkingLocationProvider: ParkingLocationProviding {
         onUpdate: @escaping (ParkingLocationEstimate) -> Void,
         onFailure: @escaping () -> Void
     ) -> ParkingLocationEstimate? {
+        startCount += 1
         self.onUpdate = onUpdate
         self.onFailure = onFailure
         return initialEstimate
     }
 
     func stopForegroundCapture() {
+        stopCount += 1
         onUpdate = nil
         onFailure = nil
     }
@@ -357,5 +497,28 @@ private final class TestParkingLocationProvider: ParkingLocationProviding {
 
     func fail() {
         onFailure?()
+    }
+}
+
+@MainActor
+private final class TestParkingMapAvailabilityProvider: ParkingMapAvailabilityProviding {
+    private let isAvailable: Bool
+    private var onChange: ((Bool) -> Void)?
+
+    init(isAvailable: Bool) {
+        self.isAvailable = isAvailable
+    }
+
+    func startObserving(onChange: @escaping (Bool) -> Void) -> Bool {
+        self.onChange = onChange
+        return isAvailable
+    }
+
+    func stopObserving() {
+        onChange = nil
+    }
+
+    func send(isAvailable: Bool) {
+        onChange?(isAvailable)
     }
 }

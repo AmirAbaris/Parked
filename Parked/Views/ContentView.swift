@@ -26,7 +26,8 @@ struct ContentView: View {
             guard parkingViewModel == nil else { return }
             let viewModel = ParkingViewModel(
                 modelContext: modelContext,
-                locationProvider: CoreLocationParkingLocationProvider()
+                locationProvider: CoreLocationParkingLocationProvider(),
+                mapAvailabilityProvider: NetworkParkingMapAvailabilityProvider()
             )
             viewModel.restore()
             parkingViewModel = viewModel
@@ -34,6 +35,8 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
                 parkingViewModel?.stopLocationCaptureForBackground()
+            } else if newPhase == .active {
+                parkingViewModel?.resumeFindMyCarAfterForeground()
             }
         }
     }
@@ -69,7 +72,7 @@ private struct ParkingHomeView: View {
                     viewModel.cancelConfirmation()
                 }
             } message: {
-                Text("Aks o joz'iyat-e park-e ghabli pak mishe.")
+                Text("Aks o detail-e park-e ghabli pak mishe.")
             }
             .alert("Mashineto peyda kardi?", isPresented: alertBinding(for: .completionConfirmation)) {
                 Button("Are, peydash kardam", role: .destructive) {
@@ -169,24 +172,31 @@ private struct ParkingHomeView: View {
         }
         .safeAreaInset(edge: .bottom) {
             parkingActionBar {
-                VStack(spacing: 4) {
-                    Button {
+                NavigationLink {
+                    FindMyCarView(viewModel: viewModel)
+                } label: {
+                    Label("Mashinam ro peyda kon", systemImage: "location.magnifyingglass")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.glassProminent)
+                .accessibilityHint("Aks, detail o location-e save shode ro neshon mide.")
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button("Mashin ro peyda kardam", systemImage: "checkmark.circle", role: .destructive) {
                         viewModel.requestCompletion()
-                    } label: {
-                        Label("Peydash kardam", systemImage: "checkmark")
-                            .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.glassProminent)
-                    .accessibilityHint("Baraye pak kardane in parking memory taeed migire.")
 
-                    Button("Dobare park kardam", systemImage: "arrow.triangle.2.circlepath") {
+                    Button("Park-e jadid save kon", systemImage: "arrow.triangle.2.circlepath", role: .destructive) {
                         viewModel.tapPark()
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .accessibilityHint("Ba taeed, park-e ghabli ro avaz mikone.")
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel("Kare digar-e park")
+                .accessibilityHint("Gozinehaye tamoom kardan ya avaz kardan-e park ro neshon mide.")
             }
         }
     }
@@ -292,7 +302,7 @@ private struct ParkingHomeView: View {
         if memory.hasTextDetails {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Text("Joz'iyat")
+                    Text("Detail")
                         .font(.title2.weight(.semibold))
 
                     Spacer()
@@ -313,7 +323,7 @@ private struct ParkingHomeView: View {
             .parkingSectionStyle()
             .accessibilityElement(children: .contain)
         } else {
-            Button("Joz'iyat ezafe kon", systemImage: "plus") {
+            Button("Detail ezafe kon", systemImage: "plus") {
                 openDetailsEditor()
             }
             .font(.headline)

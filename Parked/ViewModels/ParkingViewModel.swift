@@ -28,28 +28,67 @@ final class ParkingViewModel {
         case manual
     }
 
+    enum FindMyCarLocationState: Equatable {
+        case idle
+        case capturing
+        case available
+        case unavailable
+        case recallCuesOnly
+    }
+
+    enum MapAvailabilityState: Equatable {
+        case available
+        case unavailable
+    }
+
     private let modelContext: ModelContext
     private let now: () -> Date
     private let locationProvider: ParkingLocationProviding?
+    private let mapAvailabilityProvider: ParkingMapAvailabilityProviding?
     private let locationCaptureWindowNanoseconds: UInt64
     private var locationCaptureWindowTask: Task<Void, Never>?
     private var pendingLocationEstimate: ParkingLocationEstimate?
     private var pendingLocationCaptureFailed = false
     private var isPreparingNewMemory = false
+    private var currentFindMyCarLocation: ParkingLocationEstimate?
+    private var isFindMyCarViewActive = false
 
     private(set) var activeMemory: ParkingMemory?
     private(set) var screen: Screen = .empty
     private(set) var locationCaptureState: LocationCaptureState = .idle
+    private(set) var findMyCarLocationState: FindMyCarLocationState = .idle
+    private(set) var mapAvailabilityState: MapAvailabilityState = .available
+
+    var returnDistanceMeters: Double? {
+        guard let savedLocation = activeMemory?.locationEstimate,
+              let currentFindMyCarLocation else { return nil }
+        return currentFindMyCarLocation.distance(to: savedLocation)
+    }
+
+    var returnDistanceDescription: String? {
+        guard let returnDistanceMeters else { return nil }
+        return Self.metricDistanceDescription(for: returnDistanceMeters)
+    }
+
+    var directionsURL: URL? {
+        guard mapAvailabilityState == .available,
+              let location = activeMemory?.locationEstimate else { return nil }
+        return URL(
+            string: "http://maps.apple.com/?daddr=\(location.latitude),\(location.longitude)&dirflg=d"
+        )
+    }
 
     init(
         modelContext: ModelContext,
         now: @escaping () -> Date = Date.init,
         locationProvider: ParkingLocationProviding? = nil,
+        mapAvailabilityProvider: ParkingMapAvailabilityProviding? = nil,
         locationCaptureWindowNanoseconds: UInt64 = 10_000_000_000
     ) {
         self.modelContext = modelContext
         self.now = now
         self.locationProvider = locationProvider
+        self.mapAvailabilityProvider = mapAvailabilityProvider
         self.locationCaptureWindowNanoseconds = locationCaptureWindowNanoseconds
     }
 
@@ -174,8 +213,65 @@ final class ParkingViewModel {
     }
 
     func stopLocationCaptureForBackground() {
+        if isFindMyCarViewActive {
+            stopLocationCapture()
+            mapAvailabilityProvider?.stopObserving()
+            currentFindMyCarLocation = nil
+            findMyCarLocationState = .idle
+            mapAvailabilityState = .available
+            return
+        }
         guard activeMemory != nil || isPreparingNewMemory else { return }
         finishLocationCaptureWindow()
+    }
+
+    func resumeFindMyCarAfterForeground() {
+        guard isFindMyCarViewActive else { return }
+        isFindMyCarViewActive = false
+        beginFindMyCar()
+    }
+
+    func beginFindMyCar() {
+        guard !isFindMyCarViewActive else { return }
+        guard let activeMemory else { return }
+
+        isFindMyCarViewActive = true
+        currentFindMyCarLocation = nil
+        mapAvailabilityState = .available
+        guard activeMemory.locationEstimate != nil else {
+            findMyCarLocationState = .recallCuesOnly
+            return
+        }
+
+        startMapAvailabilityMonitoring()
+        stopLocationCapture()
+        guard let locationProvider else {
+            findMyCarLocationState = .unavailable
+            return
+        }
+
+        findMyCarLocationState = .capturing
+        let initialEstimate = locationProvider.startForegroundCapture(
+            onUpdate: { [weak self] estimate in
+                self?.receiveFindMyCarLocation(estimate)
+            },
+            onFailure: { [weak self] in
+                self?.findMyCarLocationCaptureFailed()
+            }
+        )
+        if let initialEstimate {
+            receiveFindMyCarLocation(initialEstimate)
+        }
+    }
+
+    func endFindMyCar() {
+        guard isFindMyCarViewActive else { return }
+        stopLocationCapture()
+        mapAvailabilityProvider?.stopObserving()
+        isFindMyCarViewActive = false
+        currentFindMyCarLocation = nil
+        findMyCarLocationState = .idle
+        mapAvailabilityState = .available
     }
 
     private func saveNewMemory(replacingActiveMemory: Bool = false) -> Task<Void, Never> {
@@ -287,6 +383,32 @@ final class ParkingViewModel {
         }
     }
 
+    private func receiveFindMyCarLocation(_ estimate: ParkingLocationEstimate) {
+        guard isFindMyCarViewActive, estimate.isUsable else { return }
+        currentFindMyCarLocation = estimate
+        findMyCarLocationState = .available
+    }
+
+    private func findMyCarLocationCaptureFailed() {
+        guard isFindMyCarViewActive else { return }
+        currentFindMyCarLocation = nil
+        findMyCarLocationState = .unavailable
+        stopLocationCapture()
+    }
+
+    private func startMapAvailabilityMonitoring() {
+        guard let mapAvailabilityProvider else { return }
+        mapAvailabilityState = mapAvailabilityProvider.startObserving { [weak self] isAvailable in
+            guard self?.isFindMyCarViewActive == true else { return }
+            self?.mapAvailabilityState = isAvailable ? .available : .unavailable
+        } ? .available : .unavailable
+    }
+
+    func mapDidFailToLoad() {
+        guard isFindMyCarViewActive else { return }
+        mapAvailabilityState = .unavailable
+    }
+
     private func locationCaptureFailed() {
         if isPreparingNewMemory {
             guard pendingLocationEstimate == nil else { return }
@@ -363,6 +485,14 @@ final class ParkingViewModel {
             return candidate.isMoreAccurate(than: current)
         }
         return candidate.capturedAt > current.capturedAt
+    }
+
+    private static func metricDistanceDescription(for meters: Double) -> String {
+        if meters < 1_000 {
+            let roundedMeters = Int((meters / 10).rounded() * 10)
+            return "\(roundedMeters) m"
+        }
+        return String(format: "%.1f km", meters / 1_000)
     }
 
 }

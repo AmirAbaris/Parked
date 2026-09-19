@@ -50,10 +50,10 @@ struct ParkingDetailsEditor: View {
                 } header: {
                     Text("Yaddasht")
                 } footer: {
-                    Text("Hame-ye in joz'iyat ekhtiarian.")
+                    Text("Hame-ye in detail-ha ekhtiarian.")
                 }
             }
-            .navigationTitle("Joz'iyat-e park")
+            .navigationTitle("Detail-e park")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

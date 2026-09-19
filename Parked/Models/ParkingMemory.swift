@@ -80,6 +80,17 @@ struct ParkingLocationEstimate: Equatable, Sendable {
     func isMoreAccurate(than other: ParkingLocationEstimate) -> Bool {
         horizontalAccuracy < other.horizontalAccuracy
     }
+
+    func distance(to other: ParkingLocationEstimate) -> Double {
+        let latitudeDelta = (other.latitude - latitude) * .pi / 180
+        let longitudeDelta = (other.longitude - longitude) * .pi / 180
+        let currentLatitude = latitude * .pi / 180
+        let otherLatitude = other.latitude * .pi / 180
+        let arc = sin(latitudeDelta / 2) * sin(latitudeDelta / 2)
+            + cos(currentLatitude) * cos(otherLatitude)
+            * sin(longitudeDelta / 2) * sin(longitudeDelta / 2)
+        return 6_371_000 * 2 * atan2(sqrt(arc), sqrt(1 - arc))
+    }
 }
 
 struct ParkingDetailsDraft: Equatable {
