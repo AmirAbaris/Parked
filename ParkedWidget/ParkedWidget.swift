@@ -118,31 +118,17 @@ private struct ParkedWidgetEntryView: View {
                 Text(locationSummary(for: snapshot))
                     .font(.title2.weight(.bold))
                     .foregroundStyle(.white)
-                    .lineLimit(1)
+                    .lineLimit(2)
 
-                HStack(spacing: 8) {
-                    detailLine("Bakhsh", value: snapshot.section)
-                    detailLine("Ja", value: snapshot.spot)
-                    Text(elapsedParkingTime(from: snapshot.parkedAt, to: entry.date))
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.86))
-                }
+                Text(elapsedParkingTime(from: snapshot.parkedAt, to: entry.date))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.86))
             }
             .padding(16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel(for: snapshot))
-    }
-
-    @ViewBuilder
-    private func detailLine(_ title: String, value: String?) -> some View {
-        if let value {
-            Text("\(title): \(value)")
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.86))
-                .lineLimit(1)
-        }
     }
 
     @ViewBuilder
@@ -199,13 +185,6 @@ private struct ParkedWidgetEntryView: View {
         .padding(16)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Parki nadari. Baraye save kardan, Parked ro baz kon.")
-    }
-
-    private func primaryLocation(for snapshot: ParkingWidgetSnapshot) -> String {
-        snapshot.floor.map { "Tabaghe \($0)" }
-            ?? snapshot.section
-            ?? snapshot.spot
-            ?? "Jaye park"
     }
 
     private func locationSummary(for snapshot: ParkingWidgetSnapshot) -> String {
