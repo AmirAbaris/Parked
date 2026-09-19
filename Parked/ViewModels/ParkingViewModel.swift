@@ -354,9 +354,9 @@ final class ParkingViewModel {
             floor: activeMemory.floor,
             section: activeMemory.section,
             spot: activeMemory.spot,
-            hasParkingPhoto: activeMemory.parkingPhotoData != nil
+            photoData: activeMemory.parkingPhotoData
         )
-        ParkingWidgetStore.save(snapshot, photoData: activeMemory.parkingPhotoData)
+        ParkingWidgetStore.save(snapshot)
     }
 
     private func beginLocationCapture(preparingNewMemory: Bool) {

@@ -44,13 +44,14 @@ struct ParkingWidgetTimelineProvider: TimelineProvider {
             floor: "B2",
             section: "Abi",
             spot: "C-14",
-            hasParkingPhoto: false
+            photoData: nil
         )
     }
 }
 
 private struct ParkedWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family
+    @Environment(\.colorScheme) private var colorScheme
     let entry: ParkingWidgetEntry
 
     var body: some View {
@@ -137,7 +138,7 @@ private struct ParkedWidgetEntryView: View {
 
     @ViewBuilder
     private func parkingImage(for snapshot: ParkingWidgetSnapshot) -> some View {
-        if let data = ParkingWidgetStore.photoData(named: snapshot.photoFilename),
+        if let data = snapshot.photoData,
            let image = UIImage(data: data) {
             Image(uiImage: image)
                 .resizable()
@@ -174,26 +175,48 @@ private struct ParkedWidgetEntryView: View {
     }
 
     private func hasDisplayableParkingPhoto(_ snapshot: ParkingWidgetSnapshot) -> Bool {
-        guard let data = ParkingWidgetStore.photoData(named: snapshot.photoFilename) else { return false }
+        guard let data = snapshot.photoData else { return false }
         return UIImage(data: data) != nil
     }
 
     private var emptyParking: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: "car.side.and.exclamationmark")
-                .font(.system(size: 28, weight: .medium))
-                .foregroundStyle(.tint)
-            Spacer()
-            Text("Parki nadari")
-                .font(.headline)
-            Text("Baraye save kardan, Parked ro baz kon.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+        ZStack(alignment: .bottomLeading) {
+            LinearGradient(
+                colors: emptyBackgroundColors,
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            Image(systemName: "parkingsign.circle.fill")
+                .font(.system(size: family == .systemSmall ? 74 : 104, weight: .medium))
+                .foregroundStyle(colorScheme == .dark ? .white.opacity(0.10) : .blue.opacity(0.14))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(family == .systemSmall ? 12 : 18)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Label("Parked", systemImage: "sparkles")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.blue)
+                Text("Har vaght park kardi,\nyadam mimune.")
+                    .font(family == .systemSmall ? .subheadline.weight(.semibold) : .title3.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                Text("Aks o detail-e jaye park injast.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .padding(family == .systemSmall ? 13 : 16)
         }
-        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Parki nadari. Baraye save kardan, Parked ro baz kon.")
+        .accessibilityLabel("Parked. Har vaght park kardi, yadam mimune.")
+    }
+
+    private var emptyBackgroundColors: [Color] {
+        colorScheme == .dark
+            ? [Color(red: 0.08, green: 0.14, blue: 0.22), Color(red: 0.17, green: 0.12, blue: 0.16)]
+            : [Color(red: 0.90, green: 0.95, blue: 1), Color(red: 0.98, green: 0.94, blue: 0.88)]
     }
 
     private func locationSummary(for snapshot: ParkingWidgetSnapshot) -> String {
@@ -233,7 +256,7 @@ private struct ParkedWidgetEntryView: View {
             floor: "B2",
             section: "Abi",
             spot: "C-14",
-            hasParkingPhoto: false
+            photoData: nil
         )
     )
 }
