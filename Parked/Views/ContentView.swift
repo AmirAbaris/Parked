@@ -62,8 +62,20 @@ private struct ParkingHomeView: View {
                     persistenceFailureState
                 }
             }
-            .navigationTitle("Parked")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Image("ParkedMark")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 40, height: 40)
+                        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        .accessibilityLabel("Parked")
+                        .accessibilityAddTraits(.isHeader)
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
             .alert("Park-e ghabli avaz beshe?", isPresented: alertBinding(for: .replacementConfirmation)) {
                 Button("Avaz kon", role: .destructive) {
                     viewModel.confirmReplacement()
@@ -119,15 +131,7 @@ private struct ParkingHomeView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                         .accessibilityLabel("Sample photo of a parked car beside a colored parking column")
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Yadet bemone koja parke")
-                            .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text("Ye aks az ja begir, ya tabaghe o neshone ro ezafe kon.")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    emptyStateMessage
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
@@ -145,6 +149,18 @@ private struct ParkingHomeView: View {
                 .buttonStyle(.glassProminent)
                 .accessibilityHint("Jaye park ro save mikone.")
             }
+        }
+    }
+
+    private var emptyStateMessage: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Yadet bemone koja parke")
+                .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Ye aks az ja begir, ya tabaghe o neshone ro ezafe kon.")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

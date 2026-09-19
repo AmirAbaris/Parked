@@ -57,5 +57,5 @@ The straight-line metric distance between the driver's current foreground locati
 _Avoid_: Navigation distance, route distance
 
 **System-native visual language**:
-An iPhone interface that uses familiar SwiftUI navigation, controls, spacing, typography, and system Light and Dark Mode behavior. Parked adds no separate visual theme or ornamental brand layer.
+An iPhone interface that uses familiar SwiftUI navigation, controls, spacing, typography, and system Light and Dark Mode behavior. Parked's blue-and-white mark is limited to app-identity surfaces such as the app icon and root header; it does not become a separate visual theme.
 _Avoid_: Branded design system, custom theme

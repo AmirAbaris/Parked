@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#0A84FF"/>
+  <path
+    fill="#FFFFFF"
+    fill-rule="evenodd"
+    d="M312 220H592C760 220 848 300 848 432C848 562 758 646 594 646H480V820C480 846 459 867 433 867H335C309 867 288 846 288 820V244C288 231 299 220 312 220ZM480 352V514H588C655 514 696 482 696 433C696 384 655 352 588 352H480Z"
+  />
+</svg>
