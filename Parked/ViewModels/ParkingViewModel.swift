@@ -58,6 +58,8 @@ final class ParkingViewModel {
     private(set) var locationCaptureState: LocationCaptureState = .idle
     private(set) var findMyCarLocationState: FindMyCarLocationState = .idle
     private(set) var mapAvailabilityState: MapAvailabilityState = .available
+    private(set) var parkingSaveFeedbackCount = 0
+    private(set) var destructiveActionFeedbackCount = 0
 
     var returnDistanceMeters: Double? {
         guard let savedLocation = activeMemory?.locationEstimate,
@@ -126,6 +128,7 @@ final class ParkingViewModel {
     @discardableResult
     func tapPark() -> Task<Void, Never> {
         guard activeMemory == nil else {
+            destructiveActionFeedbackCount += 1
             screen = .replacementConfirmation
             return Task {}
         }
@@ -144,6 +147,7 @@ final class ParkingViewModel {
 
     func requestCompletion() {
         guard activeMemory != nil else { return }
+        destructiveActionFeedbackCount += 1
         screen = .completionConfirmation
     }
 
@@ -175,6 +179,9 @@ final class ParkingViewModel {
 
     func savePhoto(_ data: Data?, for memoryID: UUID) {
         guard let activeMemory, activeMemory.id == memoryID else { return }
+        if data == nil, activeMemory.parkingPhotoData != nil {
+            destructiveActionFeedbackCount += 1
+        }
         activeMemory.parkingPhotoData = data
         do {
             try modelContext.save()
@@ -308,6 +315,7 @@ final class ParkingViewModel {
             try modelContext.save()
             activeMemory = memory
             screen = .active
+            parkingSaveFeedbackCount += 1
             isPreparingNewMemory = false
             pendingLocationEstimate = nil
             let captureFailed = pendingLocationCaptureFailed

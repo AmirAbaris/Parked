@@ -84,6 +84,8 @@ private struct ParkingHomeView: View {
             } message: {
                 Text("Ba taeed, in parking memory az in iPhone pak mishe.")
             }
+            .sensoryFeedback(.success, trigger: viewModel.parkingSaveFeedbackCount)
+            .sensoryFeedback(.warning, trigger: viewModel.destructiveActionFeedbackCount)
             .sheet(isPresented: detailsEditorBinding) {
                 if let detailsDraft {
                     ParkingDetailsEditor(
