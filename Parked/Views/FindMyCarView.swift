@@ -1,5 +1,5 @@
 //
-//  FindParkingMemoryView.swift
+//  FindMyCarView.swift
 //  Parked
 //
 
@@ -7,7 +7,7 @@ import MapKit
 import SwiftUI
 import UIKit
 
-struct FindParkingMemoryView: View {
+struct FindMyCarView: View {
     @Bindable var viewModel: ParkingViewModel
 
     var body: some View {
@@ -37,10 +37,10 @@ struct FindParkingMemoryView: View {
         .navigationTitle("Peyda kardan-e mashin")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            viewModel.beginFinding()
+            viewModel.beginFindMyCar()
         }
         .onDisappear {
-            viewModel.endFinding()
+            viewModel.endFindMyCar()
         }
     }
 
@@ -115,7 +115,7 @@ struct FindParkingMemoryView: View {
 
     @ViewBuilder
     private var returnDistance: some View {
-        switch viewModel.returnLocationState {
+        switch viewModel.findMyCarLocationState {
         case .available:
             if let distance = viewModel.returnDistanceDescription {
                 VStack(alignment: .leading, spacing: 6) {
@@ -141,7 +141,7 @@ struct FindParkingMemoryView: View {
             .padding(.horizontal, 4)
         case .unavailable:
             VStack(alignment: .leading, spacing: 6) {
-                Label("Fasele namaloom-e", systemImage: "location.slash")
+                Label("Fasele maloom nist", systemImage: "location.slash")
                     .font(.headline)
                 Text("Location-e alan dastres nist. Aks, joz'iyat o location-e save shode hamechenan injan.")
                     .font(.body)
@@ -154,29 +154,42 @@ struct FindParkingMemoryView: View {
     }
 
     private func savedLocationMap(_ location: ParkingLocationEstimate) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Location-e save shode")
-                .font(.headline)
-            Map(initialPosition: .region(mapRegion(for: location))) {
-                Marker("Jaye park", coordinate: location.coordinate)
-                if location.horizontalAccuracy >= 25 {
-                    MapCircle(center: location.coordinate, radius: location.horizontalAccuracy)
-                        .foregroundStyle(.tint.opacity(0.18))
-                        .stroke(.tint.opacity(0.7), lineWidth: 1)
-                }
-            }
-            .mapStyle(.standard(elevation: .realistic))
-            .frame(height: 240)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(mapAccessibilityLabel(for: location))
+        Group {
+            if viewModel.mapAvailabilityState == .available {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Location-e save shode")
+                        .font(.headline)
+                    Map(initialPosition: .region(mapRegion(for: location))) {
+                        Marker("Jaye park", coordinate: location.coordinate)
+                        if location.horizontalAccuracy >= 25 {
+                            MapCircle(center: location.coordinate, radius: location.horizontalAccuracy)
+                                .foregroundStyle(.tint.opacity(0.18))
+                                .stroke(.tint.opacity(0.7), lineWidth: 1)
+                        }
+                    }
+                    .mapStyle(.standard(elevation: .realistic))
+                    .frame(height: 240)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(mapAccessibilityLabel(for: location))
 
-            Label(
-                "Location taghribi ta had-e \(Int(location.horizontalAccuracy.rounded(.up))) metr",
-                systemImage: "scope"
-            )
-            .font(.footnote)
-            .foregroundStyle(.secondary)
+                    Label(
+                        "Location taghribi ta had-e \(Int(location.horizontalAccuracy.rounded(.up))) metr",
+                        systemImage: "scope"
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Map dastres nist", systemImage: "map.fill")
+                        .font(.headline)
+                    Text("Connection ro check kon. Aks, joz'iyat o location-e save shode hamechenan injan.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
+                .findSectionStyle()
+            }
         }
     }
 

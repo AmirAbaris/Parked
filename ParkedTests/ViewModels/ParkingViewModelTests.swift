@@ -305,7 +305,7 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertEqual(state.screen, .active)
     }
 
-    func testFindingLocationBackedMemoryUpdatesDistanceAndOffersDirections() async throws {
+    func testFindMyCarLocationBackedMemoryUpdatesDistanceAndOffersDirections() async throws {
         let context = try makeContext()
         let savedEstimate = makeEstimate(accuracy: 35)
         let currentEstimate = ParkingLocationEstimate(
@@ -322,17 +322,17 @@ final class ParkingViewModelTests: XCTestCase {
         )
         await state.tapPark().value
 
-        state.beginFinding()
+        state.beginFindMyCar()
         locationProvider.send(currentEstimate)
 
-        XCTAssertEqual(state.returnLocationState, .available)
+        XCTAssertEqual(state.findMyCarLocationState, .available)
         XCTAssertEqual(try XCTUnwrap(state.returnDistanceMeters), 1_111.95, accuracy: 0.5)
         XCTAssertEqual(state.returnDistanceDescription, "1.1 km")
         XCTAssertNotNil(state.directionsURL)
         XCTAssertEqual(locationProvider.startCount, 2)
     }
 
-    func testFindingManualMemoryShowsRecallCuesOnlyAndDoesNotStartLocation() async throws {
+    func testFindMyCarManualMemoryShowsRecallCuesOnlyAndDoesNotStartLocation() async throws {
         let context = try makeContext()
         let locationProvider = TestParkingLocationProvider()
         let state = ParkingViewModel(
@@ -343,17 +343,17 @@ final class ParkingViewModelTests: XCTestCase {
         await state.tapPark().value
         locationProvider.fail()
         state.keepManualParkingMemory()
-        let startsBeforeFinding = locationProvider.startCount
+        let startsBeforeFindMyCar = locationProvider.startCount
 
-        state.beginFinding()
+        state.beginFindMyCar()
 
-        XCTAssertEqual(state.returnLocationState, .recallCuesOnly)
+        XCTAssertEqual(state.findMyCarLocationState, .recallCuesOnly)
         XCTAssertNil(state.returnDistanceMeters)
         XCTAssertNil(state.directionsURL)
-        XCTAssertEqual(locationProvider.startCount, startsBeforeFinding)
+        XCTAssertEqual(locationProvider.startCount, startsBeforeFindMyCar)
     }
 
-    func testFindingLocationFailureKeepsDirectionsAndSavedMemoryAvailable() async throws {
+    func testFindMyCarLocationFailureKeepsDirectionsAndSavedMemoryAvailable() async throws {
         let context = try makeContext()
         let savedEstimate = makeEstimate(accuracy: 600)
         let locationProvider = TestParkingLocationProvider(initialEstimate: savedEstimate)
@@ -364,16 +364,16 @@ final class ParkingViewModelTests: XCTestCase {
         )
         await state.tapPark().value
 
-        state.beginFinding()
+        state.beginFindMyCar()
         locationProvider.fail()
 
-        XCTAssertEqual(state.returnLocationState, .unavailable)
+        XCTAssertEqual(state.findMyCarLocationState, .unavailable)
         XCTAssertNil(state.returnDistanceMeters)
         XCTAssertNotNil(state.activeMemory)
         XCTAssertNotNil(state.directionsURL)
     }
 
-    func testLeavingFindingAndEnteringBackgroundStopsReturnLocationUpdates() async throws {
+    func testLeavingFindMyCarAndEnteringBackgroundStopsCurrentLocationUpdates() async throws {
         let context = try makeContext()
         let locationProvider = TestParkingLocationProvider(initialEstimate: makeEstimate(accuracy: 10))
         let state = ParkingViewModel(
@@ -383,24 +383,44 @@ final class ParkingViewModelTests: XCTestCase {
         )
         await state.tapPark().value
 
-        state.beginFinding()
+        state.beginFindMyCar()
         let stopsBeforeLeaving = locationProvider.stopCount
-        state.endFinding()
+        state.endFindMyCar()
 
         XCTAssertEqual(locationProvider.stopCount, stopsBeforeLeaving + 1)
 
-        state.beginFinding()
+        state.beginFindMyCar()
         let stopsBeforeBackground = locationProvider.stopCount
         state.stopLocationCaptureForBackground()
 
         XCTAssertEqual(locationProvider.stopCount, stopsBeforeBackground + 1)
-        XCTAssertEqual(state.returnLocationState, .idle)
+        XCTAssertEqual(state.findMyCarLocationState, .idle)
 
         let startsBeforeForeground = locationProvider.startCount
-        state.resumeFindingAfterForeground()
+        state.resumeFindMyCarAfterForeground()
 
         XCTAssertEqual(locationProvider.startCount, startsBeforeForeground + 1)
-        XCTAssertEqual(state.returnLocationState, .available)
+        XCTAssertEqual(state.findMyCarLocationState, .available)
+    }
+
+    func testFindMyCarHidesMapAndDirectionsWhenNetworkIsUnavailable() async throws {
+        let context = try makeContext()
+        let locationProvider = TestParkingLocationProvider(initialEstimate: makeEstimate(accuracy: 20))
+        let mapAvailabilityProvider = TestParkingMapAvailabilityProvider(isAvailable: true)
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider,
+            mapAvailabilityProvider: mapAvailabilityProvider
+        )
+        await state.tapPark().value
+
+        state.beginFindMyCar()
+        mapAvailabilityProvider.send(isAvailable: false)
+
+        XCTAssertEqual(state.mapAvailabilityState, .unavailable)
+        XCTAssertNil(state.directionsURL)
+        XCTAssertNotNil(state.activeMemory)
     }
 
     private func makeContext() throws -> ModelContext {
@@ -459,5 +479,28 @@ private final class TestParkingLocationProvider: ParkingLocationProviding {
 
     func fail() {
         onFailure?()
+    }
+}
+
+@MainActor
+private final class TestParkingMapAvailabilityProvider: ParkingMapAvailabilityProviding {
+    private let isAvailable: Bool
+    private var onChange: ((Bool) -> Void)?
+
+    init(isAvailable: Bool) {
+        self.isAvailable = isAvailable
+    }
+
+    func startObserving(onChange: @escaping (Bool) -> Void) -> Bool {
+        self.onChange = onChange
+        return isAvailable
+    }
+
+    func stopObserving() {
+        onChange = nil
+    }
+
+    func send(isAvailable: Bool) {
+        onChange?(isAvailable)
     }
 }

@@ -26,7 +26,8 @@ struct ContentView: View {
             guard parkingViewModel == nil else { return }
             let viewModel = ParkingViewModel(
                 modelContext: modelContext,
-                locationProvider: CoreLocationParkingLocationProvider()
+                locationProvider: CoreLocationParkingLocationProvider(),
+                mapAvailabilityProvider: NetworkParkingMapAvailabilityProvider()
             )
             viewModel.restore()
             parkingViewModel = viewModel
@@ -35,7 +36,7 @@ struct ContentView: View {
             if newPhase == .background {
                 parkingViewModel?.stopLocationCaptureForBackground()
             } else if newPhase == .active {
-                parkingViewModel?.resumeFindingAfterForeground()
+                parkingViewModel?.resumeFindMyCarAfterForeground()
             }
         }
     }
@@ -173,7 +174,7 @@ private struct ParkingHomeView: View {
             parkingActionBar {
                 VStack(spacing: 4) {
                     NavigationLink {
-                        FindParkingMemoryView(viewModel: viewModel)
+                        FindMyCarView(viewModel: viewModel)
                     } label: {
                         Label("Mashinam ro peyda kon", systemImage: "location.magnifyingglass")
                             .frame(maxWidth: .infinity)
