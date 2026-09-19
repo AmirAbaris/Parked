@@ -182,25 +182,43 @@ private struct ParkingHomeView: View {
                     .buttonStyle(.glassProminent)
                     .accessibilityHint("Aks, joz'iyat o location-e save shode ro neshon mide.")
 
-                    HStack {
-                        Button("Peydash kardam", systemImage: "checkmark") {
-                            viewModel.requestCompletion()
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 12) {
+                            completionAction(compact: true)
+                            Spacer(minLength: 0)
+                            replacementAction(compact: true)
                         }
-                        .accessibilityHint("Baraye pak kardane in parking memory taeed migire.")
 
-                        Spacer()
-
-                        Button("Dobare park kardam", systemImage: "arrow.triangle.2.circlepath") {
-                            viewModel.tapPark()
+                        VStack(spacing: 8) {
+                            completionAction()
+                            replacementAction()
                         }
-                        .accessibilityHint("Ba taeed, park-e ghabli ro avaz mikone.")
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 }
             }
         }
+    }
+
+    private func completionAction(compact: Bool = false) -> some View {
+        Button("Mashin ro peyda kardam", systemImage: "checkmark.circle") {
+            viewModel.requestCompletion()
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .frame(maxWidth: compact ? nil : .infinity, minHeight: 44)
+        .fixedSize(horizontal: compact, vertical: false)
+        .accessibilityHint("Ba taeed, in parking memory pak mishe.")
+    }
+
+    private func replacementAction(compact: Bool = false) -> some View {
+        Button("Park-e jadid save kon", systemImage: "arrow.triangle.2.circlepath") {
+            viewModel.tapPark()
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .frame(maxWidth: compact ? nil : .infinity, minHeight: 44)
+        .fixedSize(horizontal: compact, vertical: false)
+        .accessibilityHint("Ba taeed, parking memory-e ghabli avaz mishe.")
     }
 
     private func activeHero(_ memory: ParkingMemory) -> some View {
