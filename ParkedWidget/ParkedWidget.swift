@@ -95,37 +95,42 @@ private struct ParkedWidgetEntryView: View {
             }
             .padding(12)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel(for: snapshot))
     }
 
     private func mediumActiveParking(_ snapshot: ParkingWidgetSnapshot) -> some View {
-        HStack(spacing: 14) {
+        ZStack(alignment: .bottomLeading) {
             parkingImage(for: snapshot)
-                .frame(width: 112)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 8) {
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.76)],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: 5) {
                 Label("Park shode", systemImage: "car.fill")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(.white)
 
-                Text(primaryLocation(for: snapshot))
-                    .font(.title3.weight(.bold))
+                Text(locationSummary(for: snapshot))
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.white)
                     .lineLimit(1)
 
-                detailLine("Bakhsh", value: snapshot.section)
-                detailLine("Ja", value: snapshot.spot)
-
-                Spacer(minLength: 0)
-
-                Text(elapsedParkingTime(from: snapshot.parkedAt, to: entry.date))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    detailLine("Bakhsh", value: snapshot.section)
+                    detailLine("Ja", value: snapshot.spot)
+                    Text(elapsedParkingTime(from: snapshot.parkedAt, to: entry.date))
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.86))
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
         }
-        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel(for: snapshot))
     }
@@ -135,7 +140,7 @@ private struct ParkedWidgetEntryView: View {
         if let value {
             Text("\(title): \(value)")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.white.opacity(0.86))
                 .lineLimit(1)
         }
     }
@@ -150,21 +155,31 @@ private struct ParkedWidgetEntryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
         } else {
-            parkingIllustration
+            photoNeededParking
         }
     }
 
-    private var parkingIllustration: some View {
-        ZStack {
+    private var photoNeededParking: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Spacer()
+            Image(systemName: "photo.badge.plus")
+                .font(.system(size: 34, weight: .medium))
+                .foregroundStyle(.tint)
+            Text("Aks ezafe kon")
+                .font(.headline)
+            Text("Widget aks-e park ro neshon mide.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(16)
+        .background {
             LinearGradient(
-                colors: [Color.accentColor.opacity(0.28), Color.indigo.opacity(0.18)],
+                colors: [Color.accentColor.opacity(0.18), Color(uiColor: .secondarySystemBackground)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            Image(systemName: "car.side.fill")
-                .font(.system(size: 42, weight: .medium))
-                .foregroundStyle(.tint)
-                .symbolRenderingMode(.hierarchical)
         }
     }
 
