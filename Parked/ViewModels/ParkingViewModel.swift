@@ -404,6 +404,11 @@ final class ParkingViewModel {
         } ? .available : .unavailable
     }
 
+    func mapDidFailToLoad() {
+        guard isFindMyCarViewActive else { return }
+        mapAvailabilityState = .unavailable
+    }
+
     private func locationCaptureFailed() {
         if isPreparingNewMemory {
             guard pendingLocationEstimate == nil else { return }

@@ -423,6 +423,24 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertNotNil(state.activeMemory)
     }
 
+    func testFindMyCarHidesMapAndDirectionsWhenMapTilesFailToLoad() async throws {
+        let context = try makeContext()
+        let locationProvider = TestParkingLocationProvider(initialEstimate: makeEstimate(accuracy: 20))
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+        await state.tapPark().value
+
+        state.beginFindMyCar()
+        state.mapDidFailToLoad()
+
+        XCTAssertEqual(state.mapAvailabilityState, .unavailable)
+        XCTAssertNil(state.directionsURL)
+        XCTAssertNotNil(state.activeMemory)
+    }
+
     private func makeContext() throws -> ModelContext {
         ModelContext(try makeContainer())
     }

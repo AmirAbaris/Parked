@@ -3,7 +3,6 @@
 //  Parked
 //
 
-import MapKit
 import SwiftUI
 import UIKit
 
@@ -159,15 +158,9 @@ struct FindMyCarView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Location-e save shode")
                         .font(.headline)
-                    Map(initialPosition: .region(mapRegion(for: location))) {
-                        Marker("Jaye park", coordinate: location.coordinate)
-                        if location.horizontalAccuracy >= 25 {
-                            MapCircle(center: location.coordinate, radius: location.horizontalAccuracy)
-                                .foregroundStyle(.tint.opacity(0.18))
-                                .stroke(.tint.opacity(0.7), lineWidth: 1)
-                        }
+                    SavedParkingMapView(location: location) {
+                        viewModel.mapDidFailToLoad()
                     }
-                    .mapStyle(.standard(elevation: .realistic))
                     .frame(height: 240)
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .accessibilityElement(children: .ignore)
@@ -204,14 +197,6 @@ struct FindMyCarView: View {
         .findSectionStyle()
     }
 
-    private func mapRegion(for location: ParkingLocationEstimate) -> MKCoordinateRegion {
-        let span = min(max(location.horizontalAccuracy / 55_000, 0.005), 0.08)
-        return MKCoordinateRegion(
-            center: location.coordinate,
-            span: MKCoordinateSpan(latitudeDelta: span, longitudeDelta: span)
-        )
-    }
-
     private func mapAccessibilityLabel(for location: ParkingLocationEstimate) -> String {
         "Map-e jaye park. Daghati ta had-e \(Int(location.horizontalAccuracy.rounded(.up))) metr."
     }
@@ -220,12 +205,6 @@ struct FindMyCarView: View {
 private extension ParkingMemory {
     var hasRecallDetails: Bool {
         floor != nil || section != nil || spot != nil || landmark != nil || note != nil
-    }
-}
-
-private extension ParkingLocationEstimate {
-    var coordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
 }
 
