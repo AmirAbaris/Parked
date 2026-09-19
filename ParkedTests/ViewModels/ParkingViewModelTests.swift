@@ -186,6 +186,42 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertEqual(try context.fetch(FetchDescriptor<ParkingMemory>()).count, 1)
     }
 
+    func testSavingParkingMemoryRequestsSuccessFeedback() async throws {
+        let context = try makeContext()
+        let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
+
+        XCTAssertEqual(state.parkingSaveFeedbackCount, 0)
+
+        await state.tapPark().value
+
+        XCTAssertEqual(state.parkingSaveFeedbackCount, 1)
+    }
+
+    func testDestructiveConfirmationsRequestWarningFeedback() async throws {
+        let context = try makeContext()
+        let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
+        await state.tapPark().value
+
+        state.requestCompletion()
+        XCTAssertEqual(state.destructiveActionFeedbackCount, 1)
+
+        state.cancelConfirmation()
+        state.tapPark()
+        XCTAssertEqual(state.destructiveActionFeedbackCount, 2)
+    }
+
+    func testRemovingParkingPhotoRequestsWarningFeedback() async throws {
+        let context = try makeContext()
+        let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
+        await state.tapPark().value
+        let memoryID = try XCTUnwrap(state.activeMemory?.id)
+        state.savePhoto(Data([0x01]), for: memoryID)
+
+        state.savePhoto(nil, for: memoryID)
+
+        XCTAssertEqual(state.destructiveActionFeedbackCount, 1)
+    }
+
     func testCompletionRequiresConfirmationThenRemovesTheMemory() async throws {
         let context = try makeContext()
         let state = ParkingViewModel(modelContext: context, now: { self.parkedAt })
