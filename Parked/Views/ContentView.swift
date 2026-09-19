@@ -34,6 +34,8 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
                 parkingViewModel?.stopLocationCaptureForBackground()
+            } else if newPhase == .active {
+                parkingViewModel?.resumeFindingAfterForeground()
             }
         }
     }
@@ -170,22 +172,31 @@ private struct ParkingHomeView: View {
         .safeAreaInset(edge: .bottom) {
             parkingActionBar {
                 VStack(spacing: 4) {
-                    Button {
-                        viewModel.requestCompletion()
+                    NavigationLink {
+                        FindParkingMemoryView(viewModel: viewModel)
                     } label: {
-                        Label("Peydash kardam", systemImage: "checkmark")
+                        Label("Mashinam ro peyda kon", systemImage: "location.magnifyingglass")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.glassProminent)
-                    .accessibilityHint("Baraye pak kardane in parking memory taeed migire.")
+                    .accessibilityHint("Aks, joz'iyat o location-e save shode ro neshon mide.")
 
-                    Button("Dobare park kardam", systemImage: "arrow.triangle.2.circlepath") {
-                        viewModel.tapPark()
+                    HStack {
+                        Button("Peydash kardam", systemImage: "checkmark") {
+                            viewModel.requestCompletion()
+                        }
+                        .accessibilityHint("Baraye pak kardane in parking memory taeed migire.")
+
+                        Spacer()
+
+                        Button("Dobare park kardam", systemImage: "arrow.triangle.2.circlepath") {
+                            viewModel.tapPark()
+                        }
+                        .accessibilityHint("Ba taeed, park-e ghabli ro avaz mikone.")
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .accessibilityHint("Ba taeed, park-e ghabli ro avaz mikone.")
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 }
             }
         }

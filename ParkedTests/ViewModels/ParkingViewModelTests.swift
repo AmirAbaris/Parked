@@ -305,6 +305,104 @@ final class ParkingViewModelTests: XCTestCase {
         XCTAssertEqual(state.screen, .active)
     }
 
+    func testFindingLocationBackedMemoryUpdatesDistanceAndOffersDirections() async throws {
+        let context = try makeContext()
+        let savedEstimate = makeEstimate(accuracy: 35)
+        let currentEstimate = ParkingLocationEstimate(
+            latitude: 35.7319,
+            longitude: 51.3347,
+            horizontalAccuracy: 12,
+            capturedAt: parkedAt
+        )
+        let locationProvider = TestParkingLocationProvider(initialEstimate: savedEstimate)
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+        await state.tapPark().value
+
+        state.beginFinding()
+        locationProvider.send(currentEstimate)
+
+        XCTAssertEqual(state.returnLocationState, .available)
+        XCTAssertEqual(try XCTUnwrap(state.returnDistanceMeters), 1_111.95, accuracy: 0.5)
+        XCTAssertEqual(state.returnDistanceDescription, "1.1 km")
+        XCTAssertNotNil(state.directionsURL)
+        XCTAssertEqual(locationProvider.startCount, 2)
+    }
+
+    func testFindingManualMemoryShowsRecallCuesOnlyAndDoesNotStartLocation() async throws {
+        let context = try makeContext()
+        let locationProvider = TestParkingLocationProvider()
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+        await state.tapPark().value
+        locationProvider.fail()
+        state.keepManualParkingMemory()
+        let startsBeforeFinding = locationProvider.startCount
+
+        state.beginFinding()
+
+        XCTAssertEqual(state.returnLocationState, .recallCuesOnly)
+        XCTAssertNil(state.returnDistanceMeters)
+        XCTAssertNil(state.directionsURL)
+        XCTAssertEqual(locationProvider.startCount, startsBeforeFinding)
+    }
+
+    func testFindingLocationFailureKeepsDirectionsAndSavedMemoryAvailable() async throws {
+        let context = try makeContext()
+        let savedEstimate = makeEstimate(accuracy: 600)
+        let locationProvider = TestParkingLocationProvider(initialEstimate: savedEstimate)
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+        await state.tapPark().value
+
+        state.beginFinding()
+        locationProvider.fail()
+
+        XCTAssertEqual(state.returnLocationState, .unavailable)
+        XCTAssertNil(state.returnDistanceMeters)
+        XCTAssertNotNil(state.activeMemory)
+        XCTAssertNotNil(state.directionsURL)
+    }
+
+    func testLeavingFindingAndEnteringBackgroundStopsReturnLocationUpdates() async throws {
+        let context = try makeContext()
+        let locationProvider = TestParkingLocationProvider(initialEstimate: makeEstimate(accuracy: 10))
+        let state = ParkingViewModel(
+            modelContext: context,
+            now: { self.parkedAt },
+            locationProvider: locationProvider
+        )
+        await state.tapPark().value
+
+        state.beginFinding()
+        let stopsBeforeLeaving = locationProvider.stopCount
+        state.endFinding()
+
+        XCTAssertEqual(locationProvider.stopCount, stopsBeforeLeaving + 1)
+
+        state.beginFinding()
+        let stopsBeforeBackground = locationProvider.stopCount
+        state.stopLocationCaptureForBackground()
+
+        XCTAssertEqual(locationProvider.stopCount, stopsBeforeBackground + 1)
+        XCTAssertEqual(state.returnLocationState, .idle)
+
+        let startsBeforeForeground = locationProvider.startCount
+        state.resumeFindingAfterForeground()
+
+        XCTAssertEqual(locationProvider.startCount, startsBeforeForeground + 1)
+        XCTAssertEqual(state.returnLocationState, .available)
+    }
+
     private func makeContext() throws -> ModelContext {
         ModelContext(try makeContainer())
     }
@@ -332,6 +430,8 @@ private final class TestParkingLocationProvider: ParkingLocationProviding {
     var initialEstimate: ParkingLocationEstimate?
     private var onUpdate: ((ParkingLocationEstimate) -> Void)?
     private var onFailure: (() -> Void)?
+    private(set) var startCount = 0
+    private(set) var stopCount = 0
 
     init(initialEstimate: ParkingLocationEstimate? = nil) {
         self.initialEstimate = initialEstimate
@@ -341,12 +441,14 @@ private final class TestParkingLocationProvider: ParkingLocationProviding {
         onUpdate: @escaping (ParkingLocationEstimate) -> Void,
         onFailure: @escaping () -> Void
     ) -> ParkingLocationEstimate? {
+        startCount += 1
         self.onUpdate = onUpdate
         self.onFailure = onFailure
         return initialEstimate
     }
 
     func stopForegroundCapture() {
+        stopCount += 1
         onUpdate = nil
         onFailure = nil
     }

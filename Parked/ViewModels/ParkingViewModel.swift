@@ -28,6 +28,14 @@ final class ParkingViewModel {
         case manual
     }
 
+    enum ReturnLocationState: Equatable {
+        case idle
+        case capturing
+        case available
+        case unavailable
+        case recallCuesOnly
+    }
+
     private let modelContext: ModelContext
     private let now: () -> Date
     private let locationProvider: ParkingLocationProviding?
@@ -36,10 +44,31 @@ final class ParkingViewModel {
     private var pendingLocationEstimate: ParkingLocationEstimate?
     private var pendingLocationCaptureFailed = false
     private var isPreparingNewMemory = false
+    private var currentReturnLocation: ParkingLocationEstimate?
+    private var isFinding = false
 
     private(set) var activeMemory: ParkingMemory?
     private(set) var screen: Screen = .empty
     private(set) var locationCaptureState: LocationCaptureState = .idle
+    private(set) var returnLocationState: ReturnLocationState = .idle
+
+    var returnDistanceMeters: Double? {
+        guard let savedLocation = activeMemory?.locationEstimate,
+              let currentReturnLocation else { return nil }
+        return currentReturnLocation.distance(to: savedLocation)
+    }
+
+    var returnDistanceDescription: String? {
+        guard let returnDistanceMeters else { return nil }
+        return Self.metricDistanceDescription(for: returnDistanceMeters)
+    }
+
+    var directionsURL: URL? {
+        guard let location = activeMemory?.locationEstimate else { return nil }
+        return URL(
+            string: "http://maps.apple.com/?daddr=\(location.latitude),\(location.longitude)&dirflg=d"
+        )
+    }
 
     init(
         modelContext: ModelContext,
@@ -174,8 +203,59 @@ final class ParkingViewModel {
     }
 
     func stopLocationCaptureForBackground() {
+        if isFinding {
+            stopLocationCapture()
+            currentReturnLocation = nil
+            returnLocationState = .idle
+            return
+        }
         guard activeMemory != nil || isPreparingNewMemory else { return }
         finishLocationCaptureWindow()
+    }
+
+    func resumeFindingAfterForeground() {
+        guard isFinding else { return }
+        isFinding = false
+        beginFinding()
+    }
+
+    func beginFinding() {
+        guard !isFinding else { return }
+        guard let activeMemory else { return }
+
+        isFinding = true
+        currentReturnLocation = nil
+        guard activeMemory.locationEstimate != nil else {
+            returnLocationState = .recallCuesOnly
+            return
+        }
+
+        stopLocationCapture()
+        guard let locationProvider else {
+            returnLocationState = .unavailable
+            return
+        }
+
+        returnLocationState = .capturing
+        let initialEstimate = locationProvider.startForegroundCapture(
+            onUpdate: { [weak self] estimate in
+                self?.receiveReturnLocation(estimate)
+            },
+            onFailure: { [weak self] in
+                self?.returnLocationCaptureFailed()
+            }
+        )
+        if let initialEstimate {
+            receiveReturnLocation(initialEstimate)
+        }
+    }
+
+    func endFinding() {
+        guard isFinding else { return }
+        stopLocationCapture()
+        isFinding = false
+        currentReturnLocation = nil
+        returnLocationState = .idle
     }
 
     private func saveNewMemory(replacingActiveMemory: Bool = false) -> Task<Void, Never> {
@@ -287,6 +367,19 @@ final class ParkingViewModel {
         }
     }
 
+    private func receiveReturnLocation(_ estimate: ParkingLocationEstimate) {
+        guard isFinding, estimate.isUsable else { return }
+        currentReturnLocation = estimate
+        returnLocationState = .available
+    }
+
+    private func returnLocationCaptureFailed() {
+        guard isFinding else { return }
+        currentReturnLocation = nil
+        returnLocationState = .unavailable
+        stopLocationCapture()
+    }
+
     private func locationCaptureFailed() {
         if isPreparingNewMemory {
             guard pendingLocationEstimate == nil else { return }
@@ -363,6 +456,14 @@ final class ParkingViewModel {
             return candidate.isMoreAccurate(than: current)
         }
         return candidate.capturedAt > current.capturedAt
+    }
+
+    private static func metricDistanceDescription(for meters: Double) -> String {
+        if meters < 1_000 {
+            let roundedMeters = Int((meters / 10).rounded() * 10)
+            return "\(roundedMeters) m"
+        }
+        return String(format: "%.1f km", meters / 1_000)
     }
 
 }
