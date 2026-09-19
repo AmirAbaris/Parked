@@ -163,8 +163,8 @@ private struct ParkingHomeView: View {
                                     viewModel.savePhoto(data, for: memoryID)
                                 }
                             ))
-                        parkingDetails(memory)
                         locationStatus
+                        parkingDetails(memory)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
@@ -185,20 +185,22 @@ private struct ParkingHomeView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button("Mashin ro peyda kardam", systemImage: "checkmark.circle", role: .destructive) {
-                        viewModel.requestCompletion()
-                    }
-
-                    Button("Park-e jadid save kon", systemImage: "arrow.triangle.2.circlepath", role: .destructive) {
-                        viewModel.tapPark()
-                    }
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button(role: .destructive) {
+                    viewModel.requestCompletion()
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Label("Mashin ro peyda kardam", systemImage: "checkmark.circle")
+                        .labelStyle(.iconOnly)
                 }
-                .accessibilityLabel("Kare digar-e park")
-                .accessibilityHint("Gozinehaye tamoom kardan ya avaz kardan-e park ro neshon mide.")
+                .accessibilityHint("Baraye pak kardan-e in park taeed mikhad.")
+
+                Button(role: .destructive) {
+                    viewModel.tapPark()
+                } label: {
+                    Label("Park-e jadid save kon", systemImage: "arrow.triangle.2.circlepath")
+                        .labelStyle(.iconOnly)
+                }
+                .accessibilityHint("Baraye avaz kardan-e in park taeed mikhad.")
             }
         }
     }
