@@ -60,12 +60,12 @@ struct FindMyCarView: View {
 
             if memory.hasRecallDetails {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Joz'iyat-e park")
+                    Text("Detail-e park")
                         .font(.headline)
                     detailRows(for: memory)
                 }
             } else if memory.parkingPhotoData == nil {
-                Text("Az joz'iyat ya aks-e park baraye yadet oomadan estefade kon.")
+                Text("Az detail ya aks-e park baraye yadet oomadan estefade kon.")
                     .font(.body)
                     .foregroundStyle(.secondary)
             }
@@ -142,7 +142,7 @@ struct FindMyCarView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Label("Fasele maloom nist", systemImage: "location.slash")
                     .font(.headline)
-                Text("Location-e alan dastres nist. Aks, joz'iyat o location-e save shode hamechenan injan.")
+                Text("Location-e alan dastres nist. Aks, detail o location-e save shode hamechenan injan.")
                     .font(.body)
                     .foregroundStyle(.secondary)
             }
@@ -177,7 +177,7 @@ struct FindMyCarView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Label("Map dastres nist", systemImage: "map.fill")
                         .font(.headline)
-                    Text("Connection ro check kon. Aks, joz'iyat o location-e save shode hamechenan injan.")
+                    Text("Connection ro check kon. Aks, detail o location-e save shode hamechenan injan.")
                         .font(.body)
                         .foregroundStyle(.secondary)
                 }
@@ -190,7 +190,7 @@ struct FindMyCarView: View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Location save nashod", systemImage: "mappin.slash")
                 .font(.headline)
-            Text("Baraye peyda kardan-e mashin, az aks o joz'iyat-e park estefade kon.")
+            Text("Baraye peyda kardan-e mashin, az aks o detail-e park estefade kon.")
                 .font(.body)
                 .foregroundStyle(.secondary)
         }

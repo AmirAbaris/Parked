@@ -72,7 +72,7 @@ private struct ParkingHomeView: View {
                     viewModel.cancelConfirmation()
                 }
             } message: {
-                Text("Aks o joz'iyat-e park-e ghabli pak mishe.")
+                Text("Aks o detail-e park-e ghabli pak mishe.")
             }
             .alert("Mashineto peyda kardi?", isPresented: alertBinding(for: .completionConfirmation)) {
                 Button("Are, peydash kardam", role: .destructive) {
@@ -179,7 +179,7 @@ private struct ParkingHomeView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.glassProminent)
-                .accessibilityHint("Aks, joz'iyat o location-e save shode ro neshon mide.")
+                .accessibilityHint("Aks, detail o location-e save shode ro neshon mide.")
             }
         }
         .toolbar {
@@ -302,7 +302,7 @@ private struct ParkingHomeView: View {
         if memory.hasTextDetails {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Text("Joz'iyat")
+                    Text("Detail")
                         .font(.title2.weight(.semibold))
 
                     Spacer()
@@ -323,7 +323,7 @@ private struct ParkingHomeView: View {
             .parkingSectionStyle()
             .accessibilityElement(children: .contain)
         } else {
-            Button("Joz'iyat ezafe kon", systemImage: "plus") {
+            Button("Detail ezafe kon", systemImage: "plus") {
                 openDetailsEditor()
             }
             .font(.headline)
