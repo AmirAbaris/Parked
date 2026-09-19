@@ -172,53 +172,33 @@ private struct ParkingHomeView: View {
         }
         .safeAreaInset(edge: .bottom) {
             parkingActionBar {
-                VStack(spacing: 4) {
-                    NavigationLink {
-                        FindMyCarView(viewModel: viewModel)
-                    } label: {
-                        Label("Mashinam ro peyda kon", systemImage: "location.magnifyingglass")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.glassProminent)
-                    .accessibilityHint("Aks, joz'iyat o location-e save shode ro neshon mide.")
-
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 12) {
-                            completionAction(compact: true)
-                            Spacer(minLength: 0)
-                            replacementAction(compact: true)
-                        }
-
-                        VStack(spacing: 8) {
-                            completionAction()
-                            replacementAction()
-                        }
-                    }
+                NavigationLink {
+                    FindMyCarView(viewModel: viewModel)
+                } label: {
+                    Label("Mashinam ro peyda kon", systemImage: "location.magnifyingglass")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.glassProminent)
+                .accessibilityHint("Aks, joz'iyat o location-e save shode ro neshon mide.")
             }
         }
-    }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button("Mashin ro peyda kardam", systemImage: "checkmark.circle", role: .destructive) {
+                        viewModel.requestCompletion()
+                    }
 
-    private func completionAction(compact: Bool = false) -> some View {
-        Button("Mashin ro peyda kardam", systemImage: "checkmark.circle") {
-            viewModel.requestCompletion()
+                    Button("Park-e jadid save kon", systemImage: "arrow.triangle.2.circlepath", role: .destructive) {
+                        viewModel.tapPark()
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .accessibilityLabel("Kare digar-e park")
+                .accessibilityHint("Gozinehaye tamoom kardan ya avaz kardan-e park ro neshon mide.")
+            }
         }
-        .buttonStyle(.bordered)
-        .controlSize(.regular)
-        .frame(maxWidth: compact ? nil : .infinity, minHeight: 44)
-        .fixedSize(horizontal: compact, vertical: false)
-        .accessibilityHint("Ba taeed, in parking memory pak mishe.")
-    }
-
-    private func replacementAction(compact: Bool = false) -> some View {
-        Button("Park-e jadid save kon", systemImage: "arrow.triangle.2.circlepath") {
-            viewModel.tapPark()
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.regular)
-        .frame(maxWidth: compact ? nil : .infinity, minHeight: 44)
-        .fixedSize(horizontal: compact, vertical: false)
-        .accessibilityHint("Ba taeed, parking memory-e ghabli avaz mishe.")
     }
 
     private func activeHero(_ memory: ParkingMemory) -> some View {
