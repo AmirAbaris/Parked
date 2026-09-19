@@ -13,11 +13,15 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var parkingViewModel: ParkingViewModel?
+    @State private var opensFindMyCar = false
 
     var body: some View {
         Group {
             if let parkingViewModel {
-                ParkingHomeView(viewModel: parkingViewModel)
+                ParkingHomeView(
+                    viewModel: parkingViewModel,
+                    opensFindMyCar: $opensFindMyCar
+                )
             } else {
                 ProgressView()
             }
@@ -39,12 +43,16 @@ struct ContentView: View {
                 parkingViewModel?.resumeFindMyCarAfterForeground()
             }
         }
+        .onOpenURL { url in
+            opensFindMyCar = ParkingWidgetRoute.opensFindMyCar(url)
+        }
     }
 }
 
 private struct ParkingHomeView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Bindable var viewModel: ParkingViewModel
+    @Binding var opensFindMyCar: Bool
     @State private var detailsDraft: ParkingDetailsDraft?
     @State private var isShowingPhotoChoices = false
 
@@ -64,6 +72,9 @@ private struct ParkingHomeView: View {
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(isPresented: $opensFindMyCar) {
+                FindMyCarView(viewModel: viewModel)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Image("ParkedMark")
@@ -190,8 +201,8 @@ private struct ParkingHomeView: View {
         }
         .safeAreaInset(edge: .bottom) {
             parkingActionBar {
-                NavigationLink {
-                    FindMyCarView(viewModel: viewModel)
+                Button {
+                    opensFindMyCar = true
                 } label: {
                     Label("Mashinam ro peyda kon", systemImage: "location.magnifyingglass")
                         .frame(maxWidth: .infinity)

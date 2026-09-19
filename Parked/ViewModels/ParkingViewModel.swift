@@ -110,6 +110,7 @@ final class ParkingViewModel {
         activeMemory = memories.first
         screen = activeMemory == nil ? .empty : .active
         locationCaptureState = activeMemory.map(locationState(for:)) ?? .idle
+        refreshWidget()
 
         // The app only has one active parking memory. Clean up any records left
         // behind by an interrupted older build before exposing the active one.
@@ -171,6 +172,7 @@ final class ParkingViewModel {
         do {
             try modelContext.save()
             screen = .active
+            refreshWidget()
         } catch {
             modelContext.rollback()
             screen = .persistenceFailure
@@ -185,6 +187,7 @@ final class ParkingViewModel {
         activeMemory.parkingPhotoData = data
         do {
             try modelContext.save()
+            refreshWidget()
         } catch {
             modelContext.rollback()
             screen = .persistenceFailure
@@ -200,6 +203,7 @@ final class ParkingViewModel {
             self.activeMemory = nil
             screen = .empty
             locationCaptureState = .idle
+            refreshWidget()
         } catch {
             modelContext.rollback()
             self.activeMemory = activeMemory
@@ -315,6 +319,7 @@ final class ParkingViewModel {
             try modelContext.save()
             activeMemory = memory
             screen = .active
+            refreshWidget()
             parkingSaveFeedbackCount += 1
             isPreparingNewMemory = false
             pendingLocationEstimate = nil
@@ -335,6 +340,23 @@ final class ParkingViewModel {
             pendingLocationCaptureFailed = false
             stopLocationCapture()
         }
+    }
+
+    private func refreshWidget() {
+        guard let activeMemory else {
+            ParkingWidgetStore.clear()
+            return
+        }
+
+        let snapshot = ParkingWidgetSnapshotBuilder.make(
+            parkingID: activeMemory.id,
+            parkedAt: activeMemory.parkedAt,
+            floor: activeMemory.floor,
+            section: activeMemory.section,
+            spot: activeMemory.spot,
+            hasParkingPhoto: activeMemory.parkingPhotoData != nil
+        )
+        ParkingWidgetStore.save(snapshot, photoData: activeMemory.parkingPhotoData)
     }
 
     private func beginLocationCapture(preparingNewMemory: Bool) {

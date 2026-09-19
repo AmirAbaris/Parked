@@ -1,0 +1,236 @@
+import SwiftUI
+import UIKit
+import WidgetKit
+
+struct ParkedWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: ParkingWidgetStore.kind, provider: ParkingWidgetTimelineProvider()) { entry in
+            ParkedWidgetEntryView(entry: entry)
+                .containerBackground(for: .widget) {
+                    Color(uiColor: .systemBackground)
+                }
+        }
+        .configurationDisplayName("Parked")
+        .description("Aks o detail-e parking ro neshon mide.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled()
+    }
+}
+
+struct ParkingWidgetEntry: TimelineEntry {
+    let date: Date
+    let snapshot: ParkingWidgetSnapshot?
+}
+
+struct ParkingWidgetTimelineProvider: TimelineProvider {
+    func placeholder(in context: Context) -> ParkingWidgetEntry {
+        ParkingWidgetEntry(date: .now, snapshot: previewSnapshot)
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (ParkingWidgetEntry) -> Void) {
+        completion(ParkingWidgetEntry(date: .now, snapshot: ParkingWidgetStore.read()))
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<ParkingWidgetEntry>) -> Void) {
+        let entry = ParkingWidgetEntry(date: .now, snapshot: ParkingWidgetStore.read())
+        let refreshDate = Calendar.current.date(byAdding: .minute, value: 15, to: .now)!
+        completion(Timeline(entries: [entry], policy: .after(refreshDate)))
+    }
+
+    private var previewSnapshot: ParkingWidgetSnapshot {
+        ParkingWidgetSnapshotBuilder.make(
+            parkingID: UUID(),
+            parkedAt: .now.addingTimeInterval(-4_800),
+            floor: "B2",
+            section: "Abi",
+            spot: "C-14",
+            hasParkingPhoto: false
+        )
+    }
+}
+
+private struct ParkedWidgetEntryView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: ParkingWidgetEntry
+
+    var body: some View {
+        Group {
+            if let snapshot = entry.snapshot {
+                activeParking(snapshot)
+            } else {
+                emptyParking
+            }
+        }
+        .widgetURL(entry.snapshot == nil ? ParkingWidgetRoute.appURL : ParkingWidgetRoute.findMyCarURL)
+    }
+
+    @ViewBuilder
+    private func activeParking(_ snapshot: ParkingWidgetSnapshot) -> some View {
+        switch family {
+        case .systemSmall:
+            smallActiveParking(snapshot)
+        default:
+            mediumActiveParking(snapshot)
+        }
+    }
+
+    private func smallActiveParking(_ snapshot: ParkingWidgetSnapshot) -> some View {
+        ZStack(alignment: .bottomLeading) {
+            parkingImage(for: snapshot)
+
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.74)],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(locationSummary(for: snapshot))
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                Text(elapsedParkingTime(from: snapshot.parkedAt, to: entry.date))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.85))
+            }
+            .padding(12)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel(for: snapshot))
+    }
+
+    private func mediumActiveParking(_ snapshot: ParkingWidgetSnapshot) -> some View {
+        HStack(spacing: 14) {
+            parkingImage(for: snapshot)
+                .frame(width: 112)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Park shode", systemImage: "car.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tint)
+
+                Text(primaryLocation(for: snapshot))
+                    .font(.title3.weight(.bold))
+                    .lineLimit(1)
+
+                detailLine("Bakhsh", value: snapshot.section)
+                detailLine("Ja", value: snapshot.spot)
+
+                Spacer(minLength: 0)
+
+                Text(elapsedParkingTime(from: snapshot.parkedAt, to: entry.date))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel(for: snapshot))
+    }
+
+    @ViewBuilder
+    private func detailLine(_ title: String, value: String?) -> some View {
+        if let value {
+            Text("\(title): \(value)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+    }
+
+    @ViewBuilder
+    private func parkingImage(for snapshot: ParkingWidgetSnapshot) -> some View {
+        if let data = ParkingWidgetStore.photoData(named: snapshot.photoFilename),
+           let image = UIImage(data: data) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+        } else {
+            parkingIllustration
+        }
+    }
+
+    private var parkingIllustration: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color.accentColor.opacity(0.28), Color.indigo.opacity(0.18)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            Image(systemName: "car.side.fill")
+                .font(.system(size: 42, weight: .medium))
+                .foregroundStyle(.tint)
+                .symbolRenderingMode(.hierarchical)
+        }
+    }
+
+    private var emptyParking: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: "car.side.and.exclamationmark")
+                .font(.system(size: 28, weight: .medium))
+                .foregroundStyle(.tint)
+            Spacer()
+            Text("Parki nadari")
+                .font(.headline)
+            Text("Baraye save kardan, Parked ro baz kon.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        }
+        .padding(16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Parki nadari. Baraye save kardan, Parked ro baz kon.")
+    }
+
+    private func primaryLocation(for snapshot: ParkingWidgetSnapshot) -> String {
+        snapshot.floor.map { "Tabaghe \($0)" }
+            ?? snapshot.section
+            ?? snapshot.spot
+            ?? "Jaye park"
+    }
+
+    private func locationSummary(for snapshot: ParkingWidgetSnapshot) -> String {
+        let details = [snapshot.floor, snapshot.section, snapshot.spot].compactMap { $0 }
+        return details.isEmpty ? "Jaye park" : details.joined(separator: " · ")
+    }
+
+    private func elapsedParkingTime(from parkedAt: Date, to now: Date) -> String {
+        let elapsedSeconds = max(0, now.timeIntervalSince(parkedAt))
+        if elapsedSeconds < 60 { return "Alan" }
+
+        let minutes = Int(elapsedSeconds / 60)
+        if minutes < 60 { return "\(minutes) min" }
+
+        let hours = minutes / 60
+        if hours < 24 { return "\(hours) hr" }
+        return "\(hours / 24) rooz"
+    }
+
+    private func accessibilityLabel(for snapshot: ParkingWidgetSnapshot) -> String {
+        let details = [snapshot.floor, snapshot.section, snapshot.spot]
+            .compactMap { $0 }
+            .joined(separator: ", ")
+        let elapsedTime = elapsedParkingTime(from: snapshot.parkedAt, to: entry.date)
+        return details.isEmpty ? "Park shode. \(elapsedTime)" : "Park shode. \(details). \(elapsedTime)"
+    }
+}
+
+#Preview(as: .systemMedium) {
+    ParkedWidget()
+} timeline: {
+    ParkingWidgetEntry(
+        date: .now,
+        snapshot: ParkingWidgetSnapshotBuilder.make(
+            parkingID: UUID(),
+            parkedAt: .now.addingTimeInterval(-7_200),
+            floor: "B2",
+            section: "Abi",
+            spot: "C-14",
+            hasParkingPhoto: false
+        )
+    )
+}
