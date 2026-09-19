@@ -66,11 +66,15 @@ private struct ParkedWidgetEntryView: View {
 
     @ViewBuilder
     private func activeParking(_ snapshot: ParkingWidgetSnapshot) -> some View {
-        switch family {
-        case .systemSmall:
-            smallActiveParking(snapshot)
-        default:
-            mediumActiveParking(snapshot)
+        if hasDisplayableParkingPhoto(snapshot) {
+            switch family {
+            case .systemSmall:
+                smallActiveParking(snapshot)
+            default:
+                mediumActiveParking(snapshot)
+            }
+        } else {
+            photoRequiredParking
         }
     }
 
@@ -141,11 +145,11 @@ private struct ParkedWidgetEntryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
         } else {
-            photoNeededParking
+            EmptyView()
         }
     }
 
-    private var photoNeededParking: some View {
+    private var photoRequiredParking: some View {
         VStack(alignment: .leading, spacing: 10) {
             Spacer()
             Image(systemName: "photo.badge.plus")
@@ -167,6 +171,11 @@ private struct ParkedWidgetEntryView: View {
                 endPoint: .bottomTrailing
             )
         }
+    }
+
+    private func hasDisplayableParkingPhoto(_ snapshot: ParkingWidgetSnapshot) -> Bool {
+        guard let data = ParkingWidgetStore.photoData(named: snapshot.photoFilename) else { return false }
+        return UIImage(data: data) != nil
     }
 
     private var emptyParking: some View {
