@@ -12,7 +12,7 @@ struct ParkedWidget: Widget {
         }
         .configurationDisplayName("Parked")
         .description("Aks o detail-e parking ro neshon mide.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemMedium])
         .contentMarginsDisabled()
     }
 }
@@ -50,7 +50,6 @@ struct ParkingWidgetTimelineProvider: TimelineProvider {
 }
 
 private struct ParkedWidgetEntryView: View {
-    @Environment(\.widgetFamily) private var family
     @Environment(\.colorScheme) private var colorScheme
     let entry: ParkingWidgetEntry
 
@@ -68,47 +67,10 @@ private struct ParkedWidgetEntryView: View {
     @ViewBuilder
     private func activeParking(_ snapshot: ParkingWidgetSnapshot) -> some View {
         if hasDisplayableParkingPhoto(snapshot) {
-            switch family {
-            case .systemSmall:
-                smallActiveParking(snapshot)
-            default:
-                mediumActiveParking(snapshot)
-            }
+            mediumActiveParking(snapshot)
         } else {
             photoRequiredParking
         }
-    }
-
-    private func smallActiveParking(_ snapshot: ParkingWidgetSnapshot) -> some View {
-        ZStack(alignment: .bottom) {
-            parkingImage(for: snapshot)
-
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.62)],
-                startPoint: .center,
-                endPoint: .bottom
-            )
-
-            HStack {
-                HStack(spacing: 5) {
-                    Image(systemName: "mappin.circle.fill")
-                    Text(smallLocationCue(for: snapshot))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 6)
-                .background(.black.opacity(0.38), in: Capsule())
-
-                Spacer(minLength: 0)
-            }
-            .padding(10)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel(for: snapshot))
     }
 
     private func mediumActiveParking(_ snapshot: ParkingWidgetSnapshot) -> some View {
@@ -194,17 +156,17 @@ private struct ParkedWidgetEntryView: View {
             )
 
             Image(systemName: "parkingsign.circle.fill")
-                .font(.system(size: family == .systemSmall ? 74 : 104, weight: .medium))
+                .font(.system(size: 104, weight: .medium))
                 .foregroundStyle(colorScheme == .dark ? .white.opacity(0.10) : .blue.opacity(0.14))
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                .padding(family == .systemSmall ? 12 : 18)
+                .padding(18)
 
             VStack(alignment: .leading, spacing: 5) {
                 Label("Parked", systemImage: "sparkles")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.blue)
                 Text("Har vaght park kardi,\nyadam mimune.")
-                    .font(family == .systemSmall ? .subheadline.weight(.semibold) : .title3.weight(.semibold))
+                    .font(.title3.weight(.semibold))
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                 Text("Aks o detail-e jaye park injast.")
@@ -212,7 +174,7 @@ private struct ParkedWidgetEntryView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            .padding(family == .systemSmall ? 13 : 16)
+            .padding(16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
@@ -228,10 +190,6 @@ private struct ParkedWidgetEntryView: View {
     private func locationSummary(for snapshot: ParkingWidgetSnapshot) -> String {
         let details = [snapshot.floor, snapshot.section, snapshot.spot].compactMap { $0 }
         return details.isEmpty ? "Jaye park" : details.joined(separator: " · ")
-    }
-
-    private func smallLocationCue(for snapshot: ParkingWidgetSnapshot) -> String {
-        snapshot.spot ?? snapshot.floor ?? snapshot.section ?? "Jaye park"
     }
 
     private func elapsedParkingTime(from parkedAt: Date, to now: Date) -> String {
