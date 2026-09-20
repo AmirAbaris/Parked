@@ -89,19 +89,14 @@ private struct ParkedWidgetEntryView: View {
                 endPoint: .bottom
             )
 
-            HStack(spacing: 6) {
-                Label(smallLocationCue(for: snapshot), systemImage: "mappin.and.ellipse")
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                Spacer(minLength: 0)
-                Text(elapsedParkingTime(from: snapshot.parkedAt, to: entry.date))
-                    .lineLimit(1)
-            }
-            .font(.caption2.weight(.semibold))
+            Label(smallLocationCue(for: snapshot), systemImage: "mappin.and.ellipse")
+            .font(.caption.weight(.semibold))
             .foregroundStyle(.white)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(.black.opacity(0.42), in: Capsule())
             .padding(10)
         }
