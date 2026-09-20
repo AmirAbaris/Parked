@@ -80,25 +80,30 @@ private struct ParkedWidgetEntryView: View {
     }
 
     private func smallActiveParking(_ snapshot: ParkingWidgetSnapshot) -> some View {
-        ZStack(alignment: .bottomLeading) {
+        ZStack(alignment: .bottom) {
             parkingImage(for: snapshot)
 
             LinearGradient(
-                colors: [.clear, .black.opacity(0.74)],
+                colors: [.clear, .black.opacity(0.62)],
                 startPoint: .center,
                 endPoint: .bottom
             )
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(locationSummary(for: snapshot))
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
+            HStack(spacing: 6) {
+                Label(smallLocationCue(for: snapshot), systemImage: "mappin.and.ellipse")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Spacer(minLength: 0)
                 Text(elapsedParkingTime(from: snapshot.parkedAt, to: entry.date))
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.85))
+                    .lineLimit(1)
             }
-            .padding(12)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .frame(maxWidth: .infinity)
+            .background(.black.opacity(0.42), in: Capsule())
+            .padding(10)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
@@ -222,6 +227,10 @@ private struct ParkedWidgetEntryView: View {
     private func locationSummary(for snapshot: ParkingWidgetSnapshot) -> String {
         let details = [snapshot.floor, snapshot.section, snapshot.spot].compactMap { $0 }
         return details.isEmpty ? "Jaye park" : details.joined(separator: " · ")
+    }
+
+    private func smallLocationCue(for snapshot: ParkingWidgetSnapshot) -> String {
+        snapshot.spot ?? snapshot.floor ?? snapshot.section ?? "Jaye park"
     }
 
     private func elapsedParkingTime(from parkedAt: Date, to now: Date) -> String {
